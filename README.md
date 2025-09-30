@@ -10,8 +10,8 @@ Instead of every project reinventing its own response shape, JsonDispatch gives 
 
 * **Consistency**: same response shape across all endpoints.
 * **Traceability**: every response is tied to a unique ID (via headers).
-* **Clarity**: clear separation of success, fail, and error cases.
-* **Flexibility**: support for references, properties, and links out of the box.
+* **Clarity**: clear separation of success, fail and error cases.
+* **Flexibility**: support for references, properties and links out of the box.
 
 ### 1.2 Why another spec?
 
@@ -23,7 +23,8 @@ If you’ve worked with APIs before, you know the pain:
 
 This makes it hard to build **generic clients** or debug issues.
 
-There are existing specs like [JSON:API](https://jsonapi.org/), but they can feel heavy or rigid for smaller teams. JsonDispatch is **inspired by JSON:API** but focuses on:
+There are existing specs like [JSON:API](https://jsonapi.org/), but they can feel heavy or rigid for smaller teams.
+JsonDispatch is **inspired by JSON:API** but focuses on:
 
 * **Developer happiness** → easy to adopt and extend.
 * **Production realities** → built-in request IDs, error separation, backward compatibility.
@@ -35,26 +36,26 @@ JsonDispatch is built around a few simple rules:
 
 1. **Never remove, only add**
 
-   * Responses evolve, but we don’t break clients.
-   * Deprecate fields instead of deleting them.
+    * Responses evolve, but we don’t break clients.
+    * Deprecate fields instead of deleting them.
 2. **Trace everything**
 
-   * Every response carries a unique `X-Request-Id`.
-   * Makes debugging and log correlation much easier.
+    * Every response carries a unique `X-Request-Id`.
+    * Makes debugging and log correlation much easier.
 3. **Clear status semantics**
 
-   * `success` = everything worked.
-   * `fail` = client did something wrong (validation, missing data).
-   * `error` = server or external system failed.
+    * `success` = everything worked.
+    * `fail` = client did something wrong (validation, missing data).
+    * `error` = server or external system failed.
 4. **Flexible metadata**
 
-   * `_references` let you resolve IDs into human-readable values.
-   * `_properties` describe the shape and lifecycle of data.
-   * `_links` give you pagination and related resource navigation.
+    * `_references` let you resolve IDs into human-readable values.
+    * `_properties` describe the shape and lifecycle of data.
+    * `_links` give you pagination and related resource navigation.
 5. **Versioned but predictable**
 
-   * API evolution is handled via content negotiation (`Accept` header).
-   * Major versions change the envelope; minor versions only add new fields.
+    * API evolution is handled via content negotiation (`Accept` header).
+    * Major versions change the envelope; minor versions only add new fields.
 
 ---
 
@@ -65,22 +66,21 @@ JsonDispatch handles this with **media types** and **semantic versioning**.
 
 ### 2.1 Media type explained (with examples)
 
-Every API response has a `Content-Type`.
-With JsonDispatch, you’ll use a **vendor media type** that looks like this:
+Every API response has a `Content-Type`. With JsonDispatch, you’ll use a **vendor media type** like:
 
 ```
-application/vnd.infocyph.jsondispatch.v1+json
+application/vnd.infocyph.jd.v1+json
 ```
 
-Breakdown:
+**Breakdown**
 
-* **`application`** → this is an application payload
-* **`vnd.infocyph`** → vendor name (your company/project)
-* **`jsondispatch`** → the spec we’re using
-* **`v1`** → major version of the API response structure
-* **`+json`** → it’s still JSON under the hood
+* **`application`** → application payload
+* **`vnd.infocyph`** → vendor namespace (your company/project)
+* **`jd`** → JsonDispatch spec identifier (short form)
+* **`v1`** → **major** version of the response structure
+* **`+json`** → base format is JSON (generic parsers can still handle it)
 
-So even if a client doesn’t know about JsonDispatch, it can still parse it as JSON because of the `+json` suffix.
+Even if a client isn’t JsonDispatch-aware, the `+json` suffix ensures it can parse the payload as standard JSON.
 
 ### 2.2 Versioning strategy (major/minor/patch)
 
@@ -93,14 +93,14 @@ JsonDispatch follows [Semantic Versioning](https://semver.org/):
 **Rule of thumb**:
 
 * Media type (`…v1+json`) → only changes on **major** bumps.
-* Header (`X-JsonDispatch-Version`) → carries full SemVer (major.minor.patch).
+* Header (`X-Api-Version`) → carries full SemVer (major.minor.patch).
 
 ### 2.3 Headers you’ll see in every response
 
 Alongside the body, JsonDispatch adds these standard headers:
 
-* **`Content-Type`** → e.g. `application/vnd.infocyph.jsondispatch.v1+json`
-* **`X-JsonDispatch-Version`** → full version string, e.g. `1.3.1`
+* **`Content-Type`** → e.g. `application/vnd.infocyph.jd.v1+json`
+* **`X-Api-Version`** → full version string, e.g. `1.3.1`
 * **`X-Request-Id`** → unique ID for tracing this specific request
 * **`X-Correlation-Id`** (optional) → used if this request is part of a workflow or batch
 
@@ -110,15 +110,15 @@ Clients request the version they want via the `Accept` header:
 
 ```http
 GET /articles
-Accept: application/vnd.infocyph.jsondispatch.v1+json
+Accept: application/vnd.infocyph.jd.v1+json
 ```
 
 Server responds with:
 
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/vnd.infocyph.jsondispatch.v1+json
-X-JsonDispatch-Version: 1.3.1
+Content-Type: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.3.1
 X-Request-Id: 60c1bbca-b1c8-49d0-b3ea-fe41d23290bd
 ```
 
@@ -129,14 +129,16 @@ The client now knows:
 * The request can be traced via `X-Request-Id`.
 
 **Fallback rule:**
-If a client only sends `Accept: application/json`, the server should return the **default stable version** (usually the latest major).
+If a client only sends `Accept: application/json`, the server should return the **default stable version** (usually the
+latest major).
 
 ---
 
 # 3. Request & Response Identification
 
 When you’re running APIs in production, the hardest bugs are the ones you can’t trace.
-JsonDispatch bakes **tracing identifiers** right into the protocol so every request and response is linkable in your logs.
+JsonDispatch bakes **tracing identifiers** right into the protocol so every request and response is linkable in your
+logs.
 
 ### 3.1 `X-Request-Id` – tracing every call
 
@@ -164,7 +166,7 @@ X-Request-Id: 123e4567-e89b-12d3-a456-426614174000
 ```http
 HTTP/1.1 200 OK
 X-Request-Id: 123e4567-e89b-12d3-a456-426614174000
-Content-Type: application/vnd.infocyph.jsondispatch.v1+json
+Content-Type: application/vnd.infocyph.jd.v1+json
 ```
 
 👉 With this, you can open your logs and instantly filter all activity for a given request.
@@ -209,7 +211,8 @@ For larger systems, JsonDispatch recommends supporting [W3C Trace Context](https
 * **`tracestate`** → carries vendor-specific metadata
 
 These headers work alongside `X-Request-Id` and `X-Correlation-Id`.
-If you already run distributed tracing tools (Jaeger, Zipkin, OpenTelemetry), you can plug JsonDispatch into them seamlessly.
+If you already run distributed tracing tools (Jaeger, Zipkin, OpenTelemetry), you can plug JsonDispatch into them
+seamlessly.
 
 Example:
 
@@ -226,20 +229,20 @@ tracestate: congo=t61rcWkgMzE
 # 4. Response Envelope (the outer wrapper)
 
 Every JsonDispatch response comes wrapped in a **consistent envelope**.
-This way, clients always know where to look for **status, data, errors, references, and links**.
+This way, clients always know where to look for **status, data, errors, references and links**.
 
 ### 4.1 Top-level members at a glance
 
 A JsonDispatch response body may contain these keys:
 
-| Key             | Type   | Required | Purpose                                           |
-| --------------- | ------ | -------- | ------------------------------------------------- |
-| `status`      | string | ✅       | Overall state:`success`, `fail`, or `error` |
-| `message`     | string | ⚪       | Human-friendly explanation                        |
-| `data`        | mixed  | ⚪       | Main payload (object, array, scalar)              |
-| `_references` | object | ⚪       | Lookup tables for ID → label/value mapping       |
-| `_properties` | object | ⚪       | Metadata about fields or groups                   |
-| `_links`      | object | ⚪       | Links for pagination, navigation, references      |
+| Key           | Type   | Required | Purpose                                      |
+|---------------|--------|----------|----------------------------------------------|
+| `status`      | string | ✅        | Overall state: `success`, `fail`, or `error` |
+| `message`     | string | ⚪        | Human-friendly explanation                   |
+| `data`        | mixed  | ⚪        | Main payload (object, array, scalar)         |
+| `_references` | object | ⚪        | Lookup tables for ID → label/value mapping   |
+| `_properties` | object | ⚪        | Metadata about fields or groups              |
+| `_links`      | object | ⚪        | Links for pagination, navigation, references |
 
 ⚪ = optional, depending on status type (see details below).
 
@@ -254,7 +257,12 @@ The **most important flag** in the response:
 Example:
 
 ```json
-{ "status": "success", "data": {...} }
+{
+  "status": "success",
+  "data": {
+    ...
+  }
+}
 ```
 
 ### 4.3 `message`: keeping it human-friendly
@@ -281,12 +289,12 @@ Example (success):
 
 ```json
 "data": {
-  "type": "article",
-  "source": "self",
-  "attributes": {
-    "title": "JsonDispatch in Action",
-    "category": 1
-  }
+"type": "article",
+"source": "self",
+"attributes": {
+"title": "JsonDispatch in Action",
+"category": 1
+}
 }
 ```
 
@@ -298,11 +306,11 @@ Example:
 
 ```json
 "_references": {
-  "category": {
-    "1": "News",
-    "2": "Tutorial",
-    "3": "Opinion"
-  }
+"category": {
+"1": "News",
+"2": "Tutorial",
+"3": "Opinion"
+}
 }
 ```
 
@@ -321,14 +329,14 @@ Example:
 
 ```json
 "_properties": {
-  "data": {
-    "type": "array",
-    "name": "articles",
-    "count": 20,
-    "page": 2,
-    "range": "21-40",
-    "deprecation": "https://api.example.com/docs/v2/articles"
-  }
+"data": {
+"type": "array",
+"name": "articles",
+"count": 20,
+"page": 2,
+"range": "21-40",
+"deprecation": "https://api.example.com/docs/v2/articles"
+}
 }
 ```
 
@@ -341,9 +349,9 @@ Example:
 
 ```json
 "_links": {
-  "self": "https://api.example.com/articles?page=2",
-  "next": "https://api.example.com/articles?page=3",
-  "prev": "https://api.example.com/articles?page=1"
+"self": "https://api.example.com/articles?page=2",
+"next": "https://api.example.com/articles?page=3",
+"prev": "https://api.example.com/articles?page=1"
 }
 ```
 
@@ -353,7 +361,8 @@ You’re free to extend with more (e.g., `author`, `related`, `docs`).
 
 # 5. Response Examples
 
-Examples are the fastest way to “get” JsonDispatch. Below you’ll find **success, fail, error, pagination, and references in action**.
+Examples are the fastest way to “get” JsonDispatch. Below you’ll find **success, fail, error, pagination and references
+in action**.
 
 ### 5.1 A simple success response
 
@@ -361,15 +370,15 @@ Examples are the fastest way to “get” JsonDispatch. Below you’ll find **su
 
 ```http
 GET /articles/42
-Accept: application/vnd.infocyph.jsondispatch.v1+json
+Accept: application/vnd.infocyph.jd.v1+json
 ```
 
 **Response:**
 
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/vnd.infocyph.jsondispatch.v1+json
-X-JsonDispatch-Version: 1.3.1
+Content-Type: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.3.1
 X-Request-Id: aabbccdd-1122-3344-5566-77889900aabb
 ```
 
@@ -404,15 +413,15 @@ X-Request-Id: aabbccdd-1122-3344-5566-77889900aabb
 
 ```http
 POST /articles
-Accept: application/vnd.infocyph.jsondispatch.v1+json
+Accept: application/vnd.infocyph.jd.v1+json
 ```
 
 **Response:**
 
 ```http
 HTTP/1.1 422 Unprocessable Entity
-Content-Type: application/vnd.infocyph.jsondispatch.v1+json
-X-JsonDispatch-Version: 1.3.1
+Content-Type: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.3.1
 X-Request-Id: f4b44a6e-d593-11ec-9d64-0242ac120002
 ```
 
@@ -445,15 +454,15 @@ X-Request-Id: f4b44a6e-d593-11ec-9d64-0242ac120002
 
 ```http
 GET /articles
-Accept: application/vnd.infocyph.jsondispatch.v1+json
+Accept: application/vnd.infocyph.jd.v1+json
 ```
 
 **Response:**
 
 ```http
 HTTP/1.1 503 Service Unavailable
-Content-Type: application/vnd.infocyph.jsondispatch.v1+json
-X-JsonDispatch-Version: 1.3.1
+Content-Type: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.3.1
 X-Request-Id: c043e23a-4b26-4a05-96c4-5c60fcc18d50
 ```
 
@@ -481,15 +490,15 @@ X-Request-Id: c043e23a-4b26-4a05-96c4-5c60fcc18d50
 
 ```http
 GET /articles?page=2&limit=3
-Accept: application/vnd.infocyph.jsondispatch.v1+json
+Accept: application/vnd.infocyph.jd.v1+json
 ```
 
 **Response:**
 
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/vnd.infocyph.jsondispatch.v1+json
-X-JsonDispatch-Version: 1.3.1
+Content-Type: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.3.1
 X-Request-Id: 77aa88bb-ccdd-eeff-0011-223344556677
 ```
 
@@ -557,7 +566,7 @@ X-Request-Id: 77aa88bb-ccdd-eeff-0011-223344556677
 Notice how clients don’t need to call a second API to resolve category IDs:
 
 ```json
-"attributes": { "id": 42, "title": "JsonDispatch in Action", "category": 2 }
+"attributes": {"id": 42, "title": "JsonDispatch in Action", "category": 2}
 ```
 
 Becomes:
@@ -570,11 +579,11 @@ Thanks to the `_references` object:
 
 ```json
 "_references": {
-  "category": {
-    "1": "News",
-    "2": "Tutorial",
-    "3": "Opinion"
-  }
+"category": {
+"1": "News",
+"2": "Tutorial",
+"3": "Opinion"
+}
 }
 ```
 
@@ -589,12 +598,12 @@ If every service logs errors differently, debugging becomes chaos. JsonDispatch 
 
 * **`fail`** → The client sent something invalid.
 
-  * Bad input, missing fields, constraint violations, precondition failed.
-  * Think: *“Fix your request and try again.”*
+    * Bad input, missing fields, constraint violations, precondition failed.
+    * Think: *“Fix your request and try again.”*
 * **`error`** → The server (or an external dependency) failed.
 
-  * Service down, timeout, unhandled exception.
-  * Think: *“It’s not you, it’s us.”*
+    * Service down, timeout, unhandled exception.
+    * Think: *“It’s not you, it’s us.”*
 
 This distinction helps:
 
@@ -606,8 +615,8 @@ This distinction helps:
 Both `fail` and `error` responses carry **an array of error objects** inside `data`.
 Each object can have:
 
-| Field      | Type   | Description                                             |
-| ---------- | ------ | ------------------------------------------------------- |
+| Field    | Type   | Description                                             |
+|----------|--------|---------------------------------------------------------|
 | `status` | int    | HTTP status code for this error                         |
 | `source` | string | Where the error occurred (field path or subsystem name) |
 | `title`  | string | Short label for the error                               |
@@ -668,6 +677,21 @@ Examples:
 * Document them in your API docs.
 * Map them consistently across services.
 
+**HTTP status guidance (quick table):**
+
+| Situation                               | `status` | HTTP status     |
+|-----------------------------------------|----------|-----------------|
+| OK (read/list/create/update/delete)     | success  | 200 / 201 / 204 |
+| Validation error / bad input            | fail     | 400 / 422       |
+| Auth required / failed                  | fail     | 401             |
+| Forbidden (no permission)               | fail     | 403             |
+| Not found                               | fail     | 404             |
+| Conflict (duplicate / version mismatch) | fail     | 409             |
+| Server crash / exception                | error    | 500             |
+| Upstream bad gateway                    | error    | 502             |
+| Service unavailable / maintenance       | error    | 503             |
+| Upstream timeout                        | error    | 504             |
+
 ---
 
 # 7. Properties & References (power features)
@@ -685,28 +709,28 @@ This is especially useful for clients building UIs or caching logic.
 
 Common fields you can include:
 
-| Key             | Type   | Purpose                                                                           |
-| --------------- | ------ | --------------------------------------------------------------------------------- |
+| Key           | Type   | Purpose                                                                 |
+|---------------|--------|-------------------------------------------------------------------------|
 | `type`        | string | The type of resource (`array`, `object`, `string`, `number`, `boolean`) |
-| `name`        | string | A unique identifier for the section                                               |
-| `template`    | url    | A schema or template reference (optional)                                         |
-| `deprecation` | url    | A link showing deprecation/migration info (optional)                              |
-| `count`       | int    | Number of items if this is an array (optional)                                    |
-| `range`       | string | Item range in paginated results (e.g.,`"21-40"`)                                |
-| `page`        | int    | Current page index (optional)                                                     |
+| `name`        | string | A unique identifier for the section                                     |
+| `template`    | url    | A schema or template reference (optional)                               |
+| `deprecation` | url    | A link showing deprecation/migration info (optional)                    |
+| `count`       | int    | Number of items if this is an array (optional)                          |
+| `range`       | string | Item range in paginated results (e.g.,`"21-40"`)                        |
+| `page`        | int    | Current page index (optional)                                           |
 
 #### Example:
 
 ```json
 "_properties": {
-  "data": {
-    "type": "array",
-    "name": "articles",
-    "count": 20,
-    "page": 2,
-    "range": "21-40",
-    "deprecation": "https://api.example.com/docs/v2/articles"
-  }
+"data": {
+"type": "array",
+"name": "articles",
+"count": 20,
+"page": 2,
+"range": "21-40",
+"deprecation": "https://api.example.com/docs/v2/articles"
+}
 }
 ```
 
@@ -726,16 +750,16 @@ It’s like saying: *“Whenever you see this ID in the payload, here’s what i
 
 ```json
 "_references": {
-  "category": {
-    "1": "News",
-    "2": "Tutorial",
-    "3": "Opinion"
-  },
-  "status": {
-    "A": "Active",
-    "I": "Inactive",
-    "S": "Suspended"
-  }
+"category": {
+"1": "News",
+"2": "Tutorial",
+"3": "Opinion"
+},
+"status": {
+"A": "Active",
+"I": "Inactive",
+"S": "Suspended"
+}
 }
 ```
 
@@ -745,19 +769,20 @@ So when a resource has `"category": 2`, the client can render **“Tutorial”**
 
 * Use **`_properties`** when you need to **describe the shape** of data.
 
-  * Type, count, pagination, deprecation, schema.
+    * Type, count, pagination, deprecation, schema.
 * Use **`_references`** when you need to **translate values**.
 
-  * Categories, statuses, enums, codes → human-readable names.
+    * Categories, statuses, enums, codes → human-readable names.
 
-Clients don’t need to guess, and you don’t need to write separate mapping endpoints.
+Clients don’t need to guess and you don’t need to write separate mapping endpoints.
 
 ---
 
 # 8. Links
 
 APIs aren’t just about data — they’re about **navigating between resources**.
-JsonDispatch uses a `_links` object to make your API responses self-navigable, so clients know where to go next without guesswork.
+JsonDispatch uses a `_links` object to make your API responses self-navigable, so clients know where to go next without
+guesswork.
 
 ### 8.1 Pagination links
 
@@ -773,11 +798,11 @@ When returning a collection (list of items), include pagination links to help cl
 
 ```json
 "_links": {
-  "self": "https://api.example.com/articles?page=2&limit=10",
-  "next": "https://api.example.com/articles?page=3&limit=10",
-  "prev": "https://api.example.com/articles?page=1&limit=10",
-  "first": "https://api.example.com/articles?page=1&limit=10",
-  "last": "https://api.example.com/articles?page=50&limit=10"
+"self": "https://api.example.com/articles?page=2&limit=10",
+"next": "https://api.example.com/articles?page=3&limit=10",
+"prev": "https://api.example.com/articles?page=1&limit=10",
+"first": "https://api.example.com/articles?page=1&limit=10",
+"last": "https://api.example.com/articles?page=50&limit=10"
 }
 ```
 
@@ -790,10 +815,10 @@ This makes your API more discoverable without extra documentation.
 
 ```json
 "_links": {
-  "self": "https://api.example.com/articles/42",
-  "author": "https://api.example.com/users/99",
-  "comments": "https://api.example.com/articles/42/comments",
-  "related": "https://api.example.com/tutorials/jsondispatch"
+"self": "https://api.example.com/articles/42",
+"author": "https://api.example.com/users/99",
+"comments": "https://api.example.com/articles/42/comments",
+"related": "https://api.example.com/tutorials/jsondispatch"
 }
 ```
 
@@ -806,20 +831,20 @@ Instead of just giving a URL, you can include objects with metadata:
 
 ```json
 "_links": {
-  "self": {
-    "href": "https://api.example.com/articles/42",
-    "meta": {
-      "method": "GET",
-      "auth": "required"
-    }
-  },
-  "edit": {
-    "href": "https://api.example.com/articles/42",
-    "meta": {
-      "method": "PUT",
-      "auth": "editor-role"
-    }
-  }
+"self": {
+"href": "https://api.example.com/articles/42",
+"meta": {
+"method": "GET",
+"auth": "required"
+}
+},
+"edit": {
+"href": "https://api.example.com/articles/42",
+"meta": {
+"method": "PUT",
+"auth": "editor-role"
+}
+}
 }
 ```
 
@@ -829,28 +854,30 @@ This makes `_links` more powerful: they don’t just tell clients *where* to go,
 
 # 9. Compatibility & Extensions
 
-JsonDispatch isn’t built in isolation. It takes inspiration from [JSON:API](https://jsonapi.org/) — a well-established spec — but adapts it for **real-world developer needs** like traceability, backward compatibility, and richer metadata.
+JsonDispatch isn’t built in isolation. It takes inspiration from [JSON:API](https://jsonapi.org/) — a well-established
+spec — but adapts it for **real-world developer needs** like traceability, backward compatibility and richer metadata.
 
 Think of JsonDispatch as:
 👉 *“JSON:API-inspired, but production-ready and developer-friendly.”*
 
 ### 9.1 How JsonDispatch compares to JSON:API
 
-| Feature           | JSON:API                             | JsonDispatch                                          |
-| ----------------- | ------------------------------------ | ----------------------------------------------------- |
-| Versioning        | Not in body, usually in docs/headers | Explicit via media type +`X-JsonDispatch-Version`   |
-| Request ID        | Not part of spec                     | Mandatory:`X-Request-Id` header                     |
-| Status separation | Uses `errors` for all failures     | Distinguishes `fail` (client) vs `error` (server) |
-| References        | `relationships` + `included`     | Simple `_references` lookup tables                  |
-| Metadata          | `meta` (free-form)                 | `_properties` (structured)                          |
-| Links             | `links` (standardized)             | `_links` (same idea, extended)                      |
-| Backward compat   | Not enforced                         | Strict “never remove, only add” rule                |
+| Feature           | JSON:API                             | JsonDispatch                                      |
+|-------------------|--------------------------------------|---------------------------------------------------|
+| Versioning        | Not in body, usually in docs/headers | Explicit via media type +`X-Api-Version`          |
+| Request ID        | Not part of spec                     | Mandatory:`X-Request-Id` header                   |
+| Status separation | Uses `errors` for all failures       | Distinguishes `fail` (client) vs `error` (server) |
+| References        | `relationships` + `included`         | Simple `_references` lookup tables                |
+| Metadata          | `meta` (free-form)                   | `_properties` (structured)                        |
+| Links             | `links` (standardized)               | `_links` (same idea, extended)                    |
+| Backward compat   | Not enforced                         | Strict “never remove, only add” rule              |
 
 ### 9.2 What we borrow directly from JSON:API
 
 Whenever JsonDispatch doesn’t define something, we **adopt JSON:API conventions**:
 
-* **Error object format** → our `fail`/`error` data structure matches JSON:API’s `errors` array (`status`, `source`, `title`, `detail`).
+* **Error object format** → our `fail`/`error` data structure matches JSON:API’s `errors` array (`status`, `source`,
+  `title`, `detail`).
 * **Links** → our `_links` object maps 1:1 with JSON:API’s `links`.
 * **Meta** → when `_properties` doesn’t fit, fall back to JSON:API’s `meta` structure.
 
@@ -885,11 +912,11 @@ Example:
 
 ```json
 "_properties": {
-  "oldField": {
-    "type": "string",
-    "name": "legacy-title",
-    "deprecation": "https://api.example.com/docs/v2/articles#title"
-  }
+"oldField": {
+"type": "string",
+"name": "legacy-title",
+"deprecation": "https://api.example.com/docs/v2/articles#title"
+}
 }
 ```
 
@@ -897,13 +924,14 @@ Example:
 
 # 10. Best Practices
 
-JsonDispatch gives you structure, but how you *use* it makes the difference between a clean, reliable API and a messy one.
+JsonDispatch gives you structure, but how you *use* it makes the difference between a clean, reliable API and a messy
+one.
 Here are some recommended practices to keep your APIs healthy and developer-friendly.
 
 ### 10.1 Always log `X-Request-Id`
 
 * Generate or echo `X-Request-Id` for every request.
-* Include it in **all logs**, monitoring dashboards, and error reports.
+* Include it in **all logs**, monitoring dashboards and error reports.
 * When a user reports a bug, you can say: *“Give me the request ID”* and instantly trace it through the system.
 
 👉 Treat it as the **primary correlation key** in debugging.
@@ -918,11 +946,11 @@ Example:
 
 ```json
 "_properties": {
-  "oldField": {
-    "type": "string",
-    "name": "legacy",
-    "deprecation": "https://api.example.com/docs/v2/legacy"
-  }
+"oldField": {
+"type": "string",
+"name": "legacy",
+"deprecation": "https://api.example.com/docs/v2/legacy"
+}
 }
 ```
 
@@ -938,14 +966,14 @@ Not every client will send `Accept: application/vnd...`.
 * If a client only requests `application/json`, serve the **latest stable major** version of your API.
 * Always include headers:
 
-  * `Content-Type` → which version they actually got
-  * `X-JsonDispatch-Version` → full SemVer
+    * `Content-Type` → which version they actually got
+    * `X-Api-Version` → full SemVer
 
 Example:
 
 ```http
-Content-Type: application/vnd.infocyph.jsondispatch.v1+json
-X-JsonDispatch-Version: 1.3.2
+Content-Type: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.3.2
 ```
 
 This ensures compatibility with generic JSON consumers.
@@ -955,7 +983,7 @@ This ensures compatibility with generic JSON consumers.
 JsonDispatch is about **clarity**, but not all data should be shared.
 
 * **Never expose internal IDs** (like database primary keys) unless safe. Use UUIDs or hashes instead.
-* **Don’t return stack traces** or raw exception messages in `error` responses. Stick to `code`, `title`, and `detail`.
+* **Don’t return stack traces** or raw exception messages in `error` responses. Stick to `code`, `title` and `detail`.
 * **Validate `_links` and `_references`** to avoid injection of malicious URLs.
 * **Keep error messages user-safe** — logs can have full details, responses should not.
 
@@ -981,15 +1009,20 @@ Example of safe error response:
 
 # 11. Appendix
 
-This section collects **reserved items, keywords and resources** that help keep APIs consistent across teams and projects.
+This section collects **reserved items, keywords and resources** that help keep APIs consistent across teams and
+projects.
+
+Here’s your updated **Appendix 11.1** with the **Headers quick reference** applied inline.
+
+---
 
 ### 11.1 Reserved headers in JsonDispatch
 
 These headers are considered **core to the spec** and should not be repurposed for other meanings:
 
-* **`X-Request-Id`** → unique identifier per request/response (required)
-* **`X-Correlation-Id`** → links multiple related requests (optional but recommended)
-* **`X-JsonDispatch-Version`** → full semantic version of the server’s JsonDispatch implementation (required)
+* **`X-Request-Id`** → unique identifier per request/response (**required**)
+* **`X-Correlation-Id`** → links multiple related requests (**optional but recommended**)
+* **`X-Api-Version`** → full semantic version of the server’s JsonDispatch implementation (**required**)
 
 ⚠️ If you’re already using [W3C Trace Context](https://www.w3.org/TR/trace-context/), you may also see:
 
@@ -997,6 +1030,27 @@ These headers are considered **core to the spec** and should not be repurposed f
 * `tracestate`
 
 These work alongside, not instead of, JsonDispatch headers.
+
+#### Quick reference
+
+**Request headers:**
+
+```http
+Accept: application/vnd.infocyph.jd.v1+json
+X-Request-Id: <uuid>
+X-Correlation-Id: <string>          ; optional
+traceparent: <w3c-trace-context>     ; optional
+tracestate: <w3c-trace-state>        ; optional
+```
+
+**Response headers:**
+
+```http
+Content-Type: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.3.1
+X-Request-Id: <same-as-request-or-generated>
+X-Correlation-Id: <echo-if-present>
+```
 
 ### 11.2 Reserved keywords in responses
 
@@ -1020,10 +1074,79 @@ Here are common helpers you might want to provide (or build):
 
 * **Middleware** (PSR-15 style for PHP, Express middleware for Node.js, etc.) to:
 
-  * Generate/propagate `X-Request-Id` and `X-Correlation-Id`.
-  * Attach `X-JsonDispatch-Version`.
+    * Generate/propagate `X-Request-Id` and `X-Correlation-Id`.
+    * Attach `X-Api-Version`.
 * **Response builders** that:
 
-  * Provide helpers for `success()`, `fail()`, `error()` responses.
-  * Attach `_references`, `_properties`, and `_links` consistently.
+    * Provide helpers for `success()`, `fail()`, `error()` responses.
+    * Attach `_references`, `_properties` and `_links` consistently.
 * **Logging utilities** to ensure every log line contains `X-Request-Id` and (if available) `X-Correlation-Id`.
+
+### 11.4 Minimal JSON Schema for the Envelope (dev tooling)
+
+A minimal JSON Schema for validating the **JsonDispatch response envelope**.
+Use this as a base; you can extend it with stricter `data` schemas per endpoint.
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec.infocyph.com/jsondispatch/v1/envelope.schema.json",
+  "title": "JsonDispatch v1 Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "status": { "type": "string", "enum": ["success", "fail", "error"] },
+    "message": { "type": "string" },
+    "code": { "type": "string" },
+    "data": {},
+    "_references": { "type": "object" },
+    "_properties": { "type": "object" },
+    "_links": { "type": "object" }
+  },
+  "required": ["status"]
+}
+```
+
+This schema ensures:
+
+* `status` is always present and valid.
+* Other fields are optional but must be of the correct type.
+
+
+### 11.5 Example Requests with cURL (content negotiation)
+
+Developers can test version negotiation easily with `curl`.
+
+**Request explicit version:**
+
+```bash
+curl -H 'Accept: application/vnd.infocyph.jd.v1+json' \
+     -H 'X-Request-Id: 123e4567-e89b-12d3-a456-426614174000' \
+     https://api.example.com/articles/42
+```
+
+**Response:**
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.3.1
+X-Request-Id: 123e4567-e89b-12d3-a456-426614174000
+```
+
+**Fallback with plain JSON:**
+
+```bash
+curl -H 'Accept: application/json' \
+     https://api.example.com/articles/42
+```
+
+**Server response (still JsonDispatch under the hood):**
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.3.1
+X-Request-Id: 77aa88bb-ccdd-eeff-0011-223344556677
+```
+
