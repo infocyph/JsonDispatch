@@ -1,1 +1,18 @@
-theme: jekyll-theme-leap-day
+remote_theme: pages-themes/hacker@v0.2.0
+plugins:
+  - jekyll-remote-theme
+
+title: JsonDispatch – Developer Guide
+description: A lightweight, production-ready JSON response spec.
+
+# For a project site (https://<user>.github.io/<repo>):
+#   - set baseurl: "/<repo>"
+#   - leave url empty (or set to your full site URL)
+# For a user/org site (https://<user>.github.io):
+#   - set baseurl: ""
+#   - set url to "https://<user>.github.io"
+baseurl: "/jsondispatch"   # ← change to "/<repo>" or "" as needed
+url: ""                    # ← optional; set to full site URL if you have one
+
+markdown: kramdown
+highlighter: rouge
