@@ -289,12 +289,12 @@ Example (success):
 
 ```json
 "data": {
-"type": "article",
-"source": "self",
-"attributes": {
-"title": "JsonDispatch in Action",
-"category": 1
-}
+  "type": "article",
+  "source": "self",
+  "attributes": {
+    "title": "JsonDispatch in Action",
+    "category": 1
+  }
 }
 ```
 
@@ -306,11 +306,11 @@ Example:
 
 ```json
 "_references": {
-"category": {
-"1": "News",
-"2": "Tutorial",
-"3": "Opinion"
-}
+  "category": {
+    "1": "News",
+    "2": "Tutorial",
+    "3": "Opinion"
+  }
 }
 ```
 
@@ -329,14 +329,14 @@ Example:
 
 ```json
 "_properties": {
-"data": {
-"type": "array",
-"name": "articles",
-"count": 20,
-"page": 2,
-"range": "21-40",
-"deprecation": "https://api.example.com/docs/v2/articles"
-}
+  "data": {
+    "type": "array",
+    "name": "articles",
+    "count": 20,
+    "page": 2,
+    "range": "21-40",
+    "deprecation": "https://api.example.com/docs/v2/articles"
+  }
 }
 ```
 
@@ -349,9 +349,9 @@ Example:
 
 ```json
 "_links": {
-"self": "https://api.example.com/articles?page=2",
-"next": "https://api.example.com/articles?page=3",
-"prev": "https://api.example.com/articles?page=1"
+  "self": "https://api.example.com/articles?page=2",
+  "next": "https://api.example.com/articles?page=3",
+  "prev": "https://api.example.com/articles?page=1"
 }
 ```
 
@@ -579,11 +579,11 @@ Thanks to the `_references` object:
 
 ```json
 "_references": {
-"category": {
-"1": "News",
-"2": "Tutorial",
-"3": "Opinion"
-}
+  "category": {
+    "1": "News",
+    "2": "Tutorial",
+    "3": "Opinion"
+  }
 }
 ```
 
@@ -723,14 +723,14 @@ Common fields you can include:
 
 ```json
 "_properties": {
-"data": {
-"type": "array",
-"name": "articles",
-"count": 20,
-"page": 2,
-"range": "21-40",
-"deprecation": "https://api.example.com/docs/v2/articles"
-}
+  "data": {
+    "type": "array",
+    "name": "articles",
+    "count": 20,
+    "page": 2,
+    "range": "21-40",
+    "deprecation": "https://api.example.com/docs/v2/articles"
+  }
 }
 ```
 
@@ -750,16 +750,16 @@ It’s like saying: *“Whenever you see this ID in the payload, here’s what i
 
 ```json
 "_references": {
-"category": {
-"1": "News",
-"2": "Tutorial",
-"3": "Opinion"
-},
-"status": {
-"A": "Active",
-"I": "Inactive",
-"S": "Suspended"
-}
+  "category": {
+    "1": "News",
+    "2": "Tutorial",
+    "3": "Opinion"
+  },
+  "status": {
+    "A": "Active",
+    "I": "Inactive",
+    "S": "Suspended"
+  }
 }
 ```
 
@@ -798,11 +798,11 @@ When returning a collection (list of items), include pagination links to help cl
 
 ```json
 "_links": {
-"self": "https://api.example.com/articles?page=2&limit=10",
-"next": "https://api.example.com/articles?page=3&limit=10",
-"prev": "https://api.example.com/articles?page=1&limit=10",
-"first": "https://api.example.com/articles?page=1&limit=10",
-"last": "https://api.example.com/articles?page=50&limit=10"
+  "self": "https://api.example.com/articles?page=2&limit=10",
+  "next": "https://api.example.com/articles?page=3&limit=10",
+  "prev": "https://api.example.com/articles?page=1&limit=10",
+  "first": "https://api.example.com/articles?page=1&limit=10",
+  "last": "https://api.example.com/articles?page=50&limit=10"
 }
 ```
 
@@ -815,10 +815,10 @@ This makes your API more discoverable without extra documentation.
 
 ```json
 "_links": {
-"self": "https://api.example.com/articles/42",
-"author": "https://api.example.com/users/99",
-"comments": "https://api.example.com/articles/42/comments",
-"related": "https://api.example.com/tutorials/jsondispatch"
+  "self": "https://api.example.com/articles/42",
+  "author": "https://api.example.com/users/99",
+  "comments": "https://api.example.com/articles/42/comments",
+  "related": "https://api.example.com/tutorials/jsondispatch"
 }
 ```
 
@@ -831,20 +831,20 @@ Instead of just giving a URL, you can include objects with metadata:
 
 ```json
 "_links": {
-"self": {
-"href": "https://api.example.com/articles/42",
-"meta": {
-"method": "GET",
-"auth": "required"
-}
-},
-"edit": {
-"href": "https://api.example.com/articles/42",
-"meta": {
-"method": "PUT",
-"auth": "editor-role"
-}
-}
+  "self": {
+    "href": "https://api.example.com/articles/42",
+    "meta": {
+      "method": "GET",
+      "auth": "required"
+    }
+  },
+  "edit": {
+    "href": "https://api.example.com/articles/42",
+    "meta": {
+      "method": "PUT",
+      "auth": "editor-role"
+    }
+  }
 }
 ```
 
@@ -912,11 +912,11 @@ Example:
 
 ```json
 "_properties": {
-"oldField": {
-"type": "string",
-"name": "legacy-title",
-"deprecation": "https://api.example.com/docs/v2/articles#title"
-}
+  "oldField": {
+    "type": "string",
+    "name": "legacy-title",
+    "deprecation": "https://api.example.com/docs/v2/articles#title"
+  }
 }
 ```
 
@@ -946,11 +946,11 @@ Example:
 
 ```json
 "_properties": {
-"oldField": {
-"type": "string",
-"name": "legacy",
-"deprecation": "https://api.example.com/docs/v2/legacy"
-}
+  "oldField": {
+    "type": "string",
+    "name": "legacy",
+    "deprecation": "https://api.example.com/docs/v2/legacy"
+  }
 }
 ```
 
@@ -1095,15 +1095,34 @@ Use this as a base; you can extend it with stricter `data` schemas per endpoint.
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "status": { "type": "string", "enum": ["success", "fail", "error"] },
-    "message": { "type": "string" },
-    "code": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "fail",
+        "error"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
     "data": {},
-    "_references": { "type": "object" },
-    "_properties": { "type": "object" },
-    "_links": { "type": "object" }
+    "_references": {
+      "type": "object"
+    },
+    "_properties": {
+      "type": "object"
+    },
+    "_links": {
+      "type": "object"
+    }
   },
-  "required": ["status"]
+  "required": [
+    "status"
+  ]
 }
 ```
 
@@ -1149,4 +1168,3 @@ Content-Type: application/vnd.infocyph.jd.v1+json
 X-Api-Version: 1.3.1
 X-Request-Id: 77aa88bb-ccdd-eeff-0011-223344556677
 ```
-
