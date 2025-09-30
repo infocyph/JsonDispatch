@@ -1,3 +1,26 @@
+# JsonDispatch – Developer Guide
+
+Welcome! This site hosts the JsonDispatch specification and examples.
+
+- **What is it?** A lightweight, production-ready JSON response spec.
+- **Why use it?** Versioning via media types, tracing with `X-Request-Id`, and clean success/fail/error patterns.
+
+## Contents
+
+- [1. Introduction](#1-introduction)
+- [2. Media Types & Versioning](#2-media-types--versioning)
+- [3. Request & Response Identification](#3-request--response-identification)
+- [4. Response Envelope (the outer wrapper)](#4-response-envelope-the-outer-wrapper)
+- [5. Response Examples](#5-response-examples)
+- [6. Error Handling](#6-error-handling)
+- [7. Properties & References (power features)](#7-properties--references-power-features)
+- [8. Links](#8-links)
+- [9. Compatibility & Extensions](#9-compatibility--extensions)
+- [10. Best Practices](#10-best-practices)
+- [11. Appendix](#11-appendix)
+
+---
+
 # 1. Introduction
 
 ### 1.1 What is JsonDispatch?
