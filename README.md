@@ -92,7 +92,7 @@ a response header.
 
 **For requests with a body**, set a JsonDispatch vendor media type in `Content-Type`:
 
-```
+```text
 application/vnd.infocyph.jd.v1+json
 ```
 
@@ -271,15 +271,19 @@ shared **correlation ID** links them together.
 
 **Example**
 
+**Client → Server**
+
 ```http
-# Client → Server
 POST /checkout
 Content-Type: application/vnd.infocyph.jd.v1+json
 X-Correlation-Id: order-2025-10-05-777
 
 { "cartId": "C10045" }
+```
 
-# Server → Client
+**Server → Client**
+
+```http
 HTTP/1.1 201 Created
 Content-Type: application/json
 X-Api-Version: 1.4.0
@@ -316,7 +320,7 @@ HTTP/1.1 200 OK
 Content-Type: application/json
 X-Api-Version: 1.4.0
 X-Request-Id: 1b0c9d4b-eaa2-40d0-8715-fc93e6fefb99
-X-Correlation-Id: session-998877   # if provided or generated
+X-Correlation-Id: session-998877
 traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
 tracestate: congo=t61rcWkgMzE
 ```
@@ -408,12 +412,12 @@ The format should remain **consistent** for the same `(version, method, and endp
 
 ```json
 "data": {
-"type": "article",
-"attributes": {
-"id": 42,
-"title": "JsonDispatch in Action",
-"category": 1
-}
+  "type": "article",
+  "attributes": {
+    "id": 42,
+    "title": "JsonDispatch in Action",
+    "category": 1
+  }
 }
 ```
 
@@ -457,14 +461,14 @@ Common keys include:
 
 ```json
 "_properties": {
-"data": {
-"type": "array",
-"name": "articles",
-"count": 20,
-"page": 2,
-"range": "21–40",
-"deprecation": "https://api.example.com/docs/v2/articles"
-}
+  "data": {
+    "type": "array",
+    "name": "articles",
+    "count": 20,
+    "page": 2,
+    "range": "21–40",
+    "deprecation": "https://api.example.com/docs/v2/articles"
+  }
 }
 ```
 
@@ -477,9 +481,9 @@ It can include pagination links, related resources, or documentation references.
 
 ```json
 "_links": {
-"self": "https://api.example.com/articles?page=2",
-"next": "https://api.example.com/articles?page=3",
-"prev": "https://api.example.com/articles?page=1"
+  "self": "https://api.example.com/articles?page=2",
+  "next": "https://api.example.com/articles?page=3",
+  "prev": "https://api.example.com/articles?page=1"
 }
 ```
 
@@ -487,9 +491,9 @@ It can include pagination links, related resources, or documentation references.
 
 ```json
 "_links": {
-"self": "https://api.example.com/articles/42",
-"author": "https://api.example.com/users/99",
-"comments": "https://api.example.com/articles/42/comments"
+  "self": "https://api.example.com/articles/42",
+  "author": "https://api.example.com/users/99",
+  "comments": "https://api.example.com/articles/42/comments"
 }
 ```
 
@@ -1096,27 +1100,27 @@ In such cases, `_links` entries can be full objects containing an `href` and a `
 
 ```json
 "_links": {
-"self": {
-"href": "https://api.example.com/articles/42",
-"meta": {
-"method": "GET",
-"auth": "required"
-}
-},
-"edit": {
-"href": "https://api.example.com/articles/42",
-"meta": {
-"method": "PUT",
-"auth": "editor-role"
-}
-},
-"delete": {
-"href": "https://api.example.com/articles/42",
-"meta": {
-"method": "DELETE",
-"auth": "admin-role"
-}
-}
+  "self": {
+    "href": "https://api.example.com/articles/42",
+    "meta": {
+      "method": "GET",
+      "auth": "required"
+    }
+  },
+  "edit": {
+    "href": "https://api.example.com/articles/42",
+    "meta": {
+      "method": "PUT",
+      "auth": "editor-role"
+    }
+  },
+  "delete": {
+    "href": "https://api.example.com/articles/42",
+    "meta": {
+      "method": "DELETE",
+      "auth": "admin-role"
+    }
+  }
 }
 ```
 
