@@ -2,151 +2,150 @@
 
 Welcome! This site hosts the JsonDispatch specification and examples.
 
-* **What is it?** A lightweight, production-ready JSON **response** spec.
-* **Why use it?** Stable envelope (`success`/`fail`/`error`), server-generated tracing with `X-Request-Id`, and clear
-  version signaling via `X-Api-Version`.
+- **What is it?** A lightweight, production-ready JSON response spec.
+- **Why use it?** Stable envelope (`success`/`fail`/`error`), server-generated tracing with `X-Request-Id`, and clear version signaling via `X-Api-Version`.
 
 ## Contents
 
-* [1. Introduction](#1-introduction)
-* [2. Media Types & Versioning](#2-media-types--versioning)
-* [3. Request & Response Identification](#3-request--response-identification)
-* [4. Response Envelope (the outer wrapper)](#4-response-envelope-the-outer-wrapper)
-* [5. Response Examples](#5-response-examples)
-* [6. Error Handling](#6-error-handling)
-* [7. Properties & References (power features)](#7-properties--references-power-features)
-* [8. Links](#8-links)
-* [9. Best Practices](#9-best-practices)
-* [10. Appendix](#10-appendix)
+- [1. Introduction](#1-introduction)
+- [2. Media Types & Versioning](#2-media-types--versioning)
+- [3. Request & Response Identification](#3-request--response-identification)
+- [4. Response Envelope](#4-response-envelope)
+- [5. Response Examples](#5-response-examples)
+- [6. Error Handling](#6-error-handling)
+- [7. Properties & References](#7-properties--references)
+- [8. Links](#8-links)
+- [9. Best Practices](#9-best-practices)
+- [10. Appendix](#10-appendix)
 
 ---
 
 # 1. Introduction
 
-### 1.1 What is JsonDispatch?
 
-JsonDispatch is a **lightweight API response specification** built on top of JSON.
-It defines a predictable, flexible response envelope for REST APIs so clients always know where to look for the status,
-data, and helpful metadata.
+JsonDispatch is a **lightweight API response specification** built on top of JSON. It defines a predictable, flexible response envelope for REST APIs so clients always know where to look for the status, data, and helpful metadata.
 
-Think of it as the **contract** between your backend and your clients (mobile, web, services). Instead of every project
-reinventing its own shape, JsonDispatch gives you:
+Think of it as the **contract** between your backend and your clients (mobile, web, services). Instead of every project reinventing its own shape, JsonDispatch gives you:
 
-* **Consistency** — the same envelope across all endpoints.
-* **Traceability** — every response carries a server-generated `X-Request-Id`.
-* **Clarity** — clean separation between `success`, `fail`, and `error`.
-* **Flexibility** — optional `_references`, `_properties`, and `_links` for richer responses.
+- **Consistency** — The same envelope across all endpoints
+- **Traceability** — Every response carries a server-generated `X-Request-Id`
+- **Clarity** — Clean separation between `success`, `fail`, and `error`
+- **Flexibility** — Optional `_references`, `_properties`, and `_links` for richer responses
 
-### 1.2 Why another spec?
+## 1.2 Why another spec?
 
-If you’ve worked with APIs before, you’ve probably seen:
+If you've worked with APIs before, you've probably seen:
 
-* `{ "ok": true }` here,
-* `{ "status": "success", "payload": … }` there,
-* and somewhere else… a raw stack trace in JSON. 😬
+- `{ "ok": true }` here
+- `{ "status": "success", "payload": … }` there
+- And somewhere else… a raw stack trace in JSON. 😬
 
-This chaos makes it hard to build **generic clients**, reason about failures, and correlate logs across services.
-JsonDispatch standardizes the response shape while staying practical and easy to adopt in real systems.
+This chaos makes it hard to build **generic clients**, reason about failures, and correlate logs across services. JsonDispatch standardizes the response shape while staying practical and easy to adopt in real systems.
 
-### 1.3 Core principles
+## 1.3 Core Principles
 
 JsonDispatch is built around a few simple rules:
 
-1. **Never remove, only add**
-   Responses evolve, but we don’t break clients. Deprecate fields instead of deleting them.
+### 1. Never remove, only add
 
-2. **Trace everything (server-generated IDs)**
-   The server **must** generate and return a unique `X-Request-Id` on every response (clients don’t send it). This makes
-   correlation and debugging straightforward.
+Responses evolve, but we don't break clients. Deprecate fields instead of deleting them.
 
-3. **Clear status semantics**
+### 2. Trace everything (server-generated IDs)
 
-    * `success` → everything worked
-    * `fail` → the request was invalid (validation, preconditions, etc.)
-    * `error` → the server or a dependency failed
+The server **must** generate and return a unique `X-Request-Id` on every response (clients don't send it). This makes correlation and debugging straightforward.
 
-4. **Flexible metadata when you need it**
+### 3. Clear status semantics
 
-    * `_references` → turn IDs into human-friendly values
-    * `_properties` → describe the data shape, pagination, and deprecations
-    * `_links` → make collections navigable
+- `success` → Everything worked
+- `fail` → The request was invalid (validation, preconditions, etc.)
+- `error` → The server or a dependency failed
 
-5. **Versioned but predictable**
+### 4. Flexible metadata when you need it
 
-    * **Response** carries `X-Api-Version` (full SemVer) — clients can log and reason about the exact server
-      implementation.
-    * **Requests** use `Content-Type` to indicate the request body media type (when applicable).
-    * **`Accept` stays `application/json`** — clients don’t need custom accept negotiation to consume JsonDispatch.
+- `_references` → Turn IDs into human-friendly values
+- `_properties` → Describe the data shape, pagination, and deprecations
+- `_links` → Make collections navigable
 
----
+### 5. Versioned but predictable
 
-# 2. Media Types & Versioning
-
-As your API evolves, clients need a stable way to understand **which shape they’re getting** and how to **migrate** when
-it changes. JsonDispatch solves this by versioning **request media types** and signaling the **exact server version** in
-a response header.
+- **Response** carries `X-Api-Version` (full SemVer) — clients can log and reason about the exact server implementation.
+- **`Accept` stays `application/json`** — clients don't need custom accept negotiation to consume JsonDispatch.
 
 ---
 
-### 2.1 Media type explained (with examples)
+# 2. Media types & versioning
 
-**For requests with a body**, set a JsonDispatch vendor media type in `Content-Type`:
+As your API evolves, clients need a stable way to understand **which shape they're getting** and how to **migrate** when it changes. JsonDispatch solves this by versioning **request media types** and signaling the **exact server version** in a response header.
 
-```text
-application/vnd.infocyph.jd.v1+json
+## 2.1 Media type explained (with examples)
+
+For requests with a body, set a JsonDispatch vendor media type in `Content-Type`:
+
+```http
+Content-Type: application/vnd.infocyph.jd.v1+json
 ```
 
-**Breakdown**
+### Media type breakdown
 
-* **`application`** → application payload (static)
-* **`vnd.infocyph`** → your vendor namespace (configurable)
-* **`jd`** → JsonDispatch spec identifier (static for this spec)
-* **`v1`** → **major** version of the request format (configurable)
-* **`+json`** → JSON syntax suffix (static)
+- **`application`** → Application payload (static)
+- **`vnd.infocyph`** → Your vendor namespace (configurable)
+- **`jd`** → JsonDispatch spec identifier (static for this spec)
+- **`v1`** → **Major** version of the request format (configurable)
+- **`+json`** → JSON syntax suffix (static)
 
 > **Responses** can simply use `Content-Type: application/json` while still following the JsonDispatch envelope.
 
-**Examples**
+### Examples
 
-* Project “Acme”: `application/vnd.acme.jd.v1+json`
-* Personal/OSS (not recommended for org APIs): `application/prs.yourname.jd.v1+json`
+- **Project "Acme"**: `application/vnd.acme.jd.v1+json`
+- **Personal/OSS** (not recommended for org APIs): `application/prs.yourname.jd.v1+json`
 
-### 2.2 Versioning strategy (major/minor/patch)
+## 2.2 Versioning strategy (major/minor/patch)
 
-JsonDispatch follows **Semantic Versioning**:
+JsonDispatch follows [semantic Versioning](https://semver.org/):
+- **Major (v1 → v2)**: Breaking changes to the **envelope or field types**
+- **Minor (v1.1 → v1.2)**: Backward-compatible additions
+- **Patch (v1.0.0 → v1.0.1)**: Backward-compatible bug fixes
 
-* **Major (v1 → v2)**: breaking changes to the **envelope or field types**.
-* **Minor (1.2 → 1.3)**: **add-only** changes (backward compatible).
-* **Patch (1.3.0 → 1.3.1)**: text/bug fixes (no structural impact).
+> **Key point**: The **request media type** carries the **major** version: `…jd.v1+json`.
+> The server's full version is in `X-Api-Version` (e.g., `1.3.0`).
 
-**Rules**
+- **Do not** use `Accept` for version negotiation; keep it `application/json` if you send it at all.
 
-* The **request media type** carries the **major**: `…jd.v1+json`.
-* The **response** includes `X-Api-Version: <MAJOR.MINOR.PATCH>` so clients can log the exact server version they
-  received.
-* **Do not** use `Accept` for version negotiation; keep it `application/json` if you send it at all.
+## 2.3 Required & recommended headers
 
-### 2.3 Required & recommended headers
+### Requests (with body)
 
-**Requests (with body)**
+- **MUST** send:
+  ```http
+  Content-Type: application/vnd.<vendor>.jd.v<MAJOR>+json
+  ```
+  Example:
+  ```http
+  Content-Type: application/vnd.infocyph.jd.v1+json
+  ```
 
-* **MUST** send:
-  `Content-Type: application/vnd.<vendor>.jd.v<MAJOR>+json`
-  Example: `Content-Type: application/vnd.infocyph.jd.v1+json`
+- **SHOULD NOT** use `Accept` for versioning. If present, keep it:
+  ```http
+  Accept: application/json
+  ```
 
-* **SHOULD NOT** use `Accept` for versioning. If present, keep it:
-  `Accept: application/json`
+### Responses
 
-**Responses**
+- **MUST** send:
+  ```http
+  X-Api-Version: <MAJOR.MINOR.PATCH>
+  ```
+  Example:
+  ```http
+  X-Api-Version: 1.4.0
+  ```
 
-* **MUST** send:
-  `X-Api-Version: <MAJOR.MINOR.PATCH>` (e.g., `1.4.0`)
-
-* **MAY** send:
-  `Content-Type: application/json` *(recommended default)*
-
-  > Servers can still set a vendor media type on responses if they want, but `application/json` is sufficient and
-  preferred.
+- **MAY** send:
+  ```http
+  Content-Type: application/json
+  ```
+  > **Note**: Servers can still set a vendor media type on responses if needed, but `application/json` is sufficient and preferred.
 
 > `X-Request-Id`, `X-Correlation-Id`, and other tracing headers are covered in **Section 3**.
 
@@ -205,16 +204,6 @@ X-Request-Id: 6c2a3d7e-9d5a-4b61-9b05-d1d8f6a8f4a1
 Clients signal **request major** via `Content-Type` (when they send a body), and servers announce the **exact
 implementation** via `X-Api-Version` in the **response**. No `Accept` gymnastics, and responses stay plain
 `application/json`.
-
----
-
-Excellent — let’s rewrite **Section 3** so it matches your latest protocol rules:
-
-* `X-Request-Id` is **always generated by the server**, not the client.
-* `X-Correlation-Id` is optional; it can be **client-supplied or system-propagated**, but never required.
-* `X-Api-Version` is **response-only**.
-* Requests stay clean (`Accept: application/json`, `Content-Type` for body only).
-* Responses remain `application/json`.
 
 ---
 
@@ -516,17 +505,6 @@ It can include pagination links, related resources, or documentation references.
 
 👉 Together, these create a consistent, machine-parsable yet human-friendly response pattern across all JsonDispatch
 APIs.
-
-
----
-
-Excellent — here’s **Section 5 (Response Examples)** rewritten to follow your new, final design rules:
-
-✅ Response-only (no request headers like `Accept: application/vnd…`)
-✅ Request `Content-Type` is used when the client sends a body
-✅ Response `Content-Type` = `application/json`
-✅ `X-Request-Id` and `X-Api-Version` are **server-generated only**
-✅ Clear, developer-friendly tone with practical examples
 
 ---
 
@@ -1338,7 +1316,7 @@ The Appendix provides **reference materials, reserved conventions, and developer
 integrating JsonDispatch.
 
 It’s meant as a **quick lookup section** — not something you memorize, but something you check when building middleware,
-validation tools, or test clients.
+validation tools or test clients.
 
 ### 11.1 Reserved Headers (Response Only)
 
