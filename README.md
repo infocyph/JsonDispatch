@@ -429,12 +429,14 @@ resolution.
 **Example**
 
 ```json
-"_references": {
-"category": {
-"1": "News",
-"2": "Tutorial",
-"3": "Opinion"
-}
+{
+  "_references": {
+    "category": {
+      "1": "News",
+      "2": "Tutorial",
+      "3": "Opinion"
+    }
+  }
 }
 ```
 
@@ -480,20 +482,24 @@ It can include pagination links, related resources, or documentation references.
 **Example — Pagination**
 
 ```json
-"_links": {
-  "self": "https://api.example.com/articles?page=2",
-  "next": "https://api.example.com/articles?page=3",
-  "prev": "https://api.example.com/articles?page=1"
+{
+  "_links": {
+    "self": "https://api.example.com/articles?page=2",
+    "next": "https://api.example.com/articles?page=3",
+    "prev": "https://api.example.com/articles?page=1"
+  }
 }
 ```
 
 **Example — Related Resources**
 
 ```json
-"_links": {
-  "self": "https://api.example.com/articles/42",
-  "author": "https://api.example.com/users/99",
-  "comments": "https://api.example.com/articles/42/comments"
+{
+  "_links": {
+    "self": "https://api.example.com/articles/42",
+    "author": "https://api.example.com/users/99",
+    "comments": "https://api.example.com/articles/42/comments"
+  }
 }
 ```
 
@@ -739,9 +745,9 @@ Clients no longer need to fetch category labels from another endpoint:
 
 ```json
 "attributes": {
-"id": 42,
-"title": "JsonDispatch in Action",
-"category": 2
+  "id": 42,
+  "title": "JsonDispatch in Action",
+  "category": 2
 }
 ```
 
@@ -749,11 +755,11 @@ Can be immediately resolved using `_references`:
 
 ```json
 "_references": {
-"category": {
-"1": "News",
-"2": "Tutorial",
-"3": "Opinion"
-}
+  "category": {
+    "1": "News",
+    "2": "Tutorial",
+    "3": "Opinion"
+  }
 }
 ```
 
@@ -929,14 +935,14 @@ schema changes).
 
 ```json
 "_properties": {
-"data": {
-"type": "array",
-"name": "articles",
-"count": 20,
-"page": 2,
-"range": "21-40",
-"deprecation": "https://api.example.com/docs/v2/articles"
-}
+    "data": {
+        "type": "array",
+        "name": "articles",
+        "count": 20,
+        "page": 2,
+        "range": "21-40",
+        "deprecation": "https://api.example.com/docs/v2/articles"
+    }
 }
 ```
 
@@ -958,16 +964,16 @@ It eliminates the need for extra “dictionary” or “enum” endpoints.
 
 ```json
 "_references": {
-"category": {
-"1": "News",
-"2": "Tutorial",
-"3": "Opinion"
-},
-"status": {
-"A": "Active",
-"I": "Inactive",
-"S": "Suspended"
-}
+    "category": {
+        "1": "News",
+        "2": "Tutorial",
+        "3": "Opinion"
+    },
+    "status": {
+        "A": "Active",
+        "I": "Inactive",
+        "S": "Suspended"
+    }
 }
 ```
 
@@ -1057,11 +1063,11 @@ Whenever your response includes a collection or list, include pagination links t
 
 ```json
 "_links": {
-"self": "https://api.example.com/articles?page=2&limit=10",
-"next": "https://api.example.com/articles?page=3&limit=10",
-"prev": "https://api.example.com/articles?page=1&limit=10",
-"first": "https://api.example.com/articles?page=1&limit=10",
-"last": "https://api.example.com/articles?page=50&limit=10"
+    "self": "https://api.example.com/articles?page=2&limit=10",
+    "next": "https://api.example.com/articles?page=3&limit=10",
+    "prev": "https://api.example.com/articles?page=1&limit=10",
+    "first": "https://api.example.com/articles?page=1&limit=10",
+    "last": "https://api.example.com/articles?page=50&limit=10"
 }
 ```
 
@@ -1078,10 +1084,10 @@ These hints tell the client where additional or contextual information lives.
 
 ```json
 "_links": {
-"self": "https://api.example.com/articles/42",
-"author": "https://api.example.com/users/99",
-"comments": "https://api.example.com/articles/42/comments",
-"related": "https://api.example.com/tutorials/jsondispatch"
+    "self": "https://api.example.com/articles/42",
+    "author": "https://api.example.com/users/99",
+    "comments": "https://api.example.com/articles/42/comments",
+    "related": "https://api.example.com/tutorials/jsondispatch"
 }
 ```
 
@@ -1162,12 +1168,14 @@ When making changes to your API responses:
 #### Example
 
 ```json
-"_properties": {
-"legacyTitle": {
-"type": "string",
-"name": "legacy-title",
-"deprecation": "https://api.example.com/docs/v2/articles#title"
-}
+{
+  "_properties": {
+    "legacyTitle": {
+      "type": "string",
+      "name": "legacy-title",
+      "deprecation": "https://api.example.com/docs/v2/articles#title"
+    }
+  }
 }
 ```
 
@@ -1228,12 +1236,14 @@ These best practices ensure consistency, observability, and developer happiness.
 #### Example
 
 ```json
-"_properties": {
-"oldField": {
-"type": "string",
-"name": "legacy",
-"deprecation": "https://api.example.com/docs/v2/legacy"
-}
+{
+  "_properties": {
+    "oldField": {
+      "type": "string",
+      "name": "legacy",
+      "deprecation": "https://api.example.com/docs/v2/legacy"
+    }
+  }
 }
 ```
 
@@ -1304,19 +1314,23 @@ They’re not fluff — they make your responses **self-describing**.
 Example:
 
 ```json
-"_references": {
-"status": {"A": "Active", "I": "Inactive"}
-},
-"_properties": {
-"data": { "type": "array", "name": "users", "count": 50, "page": 1
-}
+{
+  "_references": {
+    "status": {
+      "A": "Active",
+      "I": "Inactive"
+    }
+  },
+  "_properties": {
+    "data": {
+      "type": "array",
+      "name": "users",
+      "count": 50,
+      "page": 1
+    }
+  }
 }
 ```
-
-The more context you embed, the fewer docs your clients need to read.
-
-
----
 
 # 11. Appendix
 
