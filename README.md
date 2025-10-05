@@ -46,27 +46,27 @@ This chaos makes it hard to build **generic clients**, reason about failures, an
 
 JsonDispatch is built around a few simple rules:
 
-### 1. Never remove, only add
+#### Never remove, only add
 
 Responses evolve, but we don't break clients. Deprecate fields instead of deleting them.
 
-### 2. Trace everything (server-generated IDs)
+#### Trace everything (server-generated IDs)
 
 The server **must** generate and return a unique `X-Request-Id` on every response (clients don't send it). This makes correlation and debugging straightforward.
 
-### 3. Clear status semantics
+#### Clear status semantics
 
 - `success` → Everything worked
 - `fail` → The request was invalid (validation, preconditions, etc.)
 - `error` → The server or a dependency failed
 
-### 4. Flexible metadata when you need it
+#### Flexible metadata when you need it
 
 - `_references` → Turn IDs into human-friendly values
 - `_properties` → Describe the data shape, pagination, and deprecations
 - `_links` → Make collections navigable
 
-### 5. Versioned but predictable
+#### Versioned but predictable
 
 - **Response** carries `X-Api-Version` (full SemVer) — clients can log and reason about the exact server implementation.
 - **`Accept` stays `application/json`** — clients don't need custom accept negotiation to consume JsonDispatch.
