@@ -3,7 +3,7 @@
 Welcome! This site hosts the JsonDispatch specification and examples.
 
 - **What is it?** A lightweight, production-ready JSON response spec.
-- **Why use it?** Stable envelope (`success`/`fail`/`error`), server-generated tracing with `X-Request-Id`, and clear version signaling via `X-Api-Version`.
+- **Why use it?** Stable envelope (`success`/`fail`/`error`), server-generated tracing with `X-Request-Id` and clear version signaling via `X-Api-Version`.
 
 ## Contents
 
@@ -23,14 +23,14 @@ Welcome! This site hosts the JsonDispatch specification and examples.
 # 1. Introduction
 
 
-JsonDispatch is a **lightweight API response specification** built on top of JSON. It defines a predictable, flexible response envelope for REST APIs so clients always know where to look for the status, data, and helpful metadata.
+JsonDispatch is a **lightweight API response specification** built on top of JSON. It defines a predictable, flexible response envelope for REST APIs so clients always know where to look for the status, data and helpful metadata.
 
 Think of it as the **contract** between your backend and your clients (mobile, web, services). Instead of every project reinventing its own shape, JsonDispatch gives you:
 
 - **Consistency** — The same envelope across all endpoints
 - **Traceability** — Every response carries a server-generated `X-Request-Id`
-- **Clarity** — Clean separation between `success`, `fail`, and `error`
-- **Flexibility** — Optional `_references`, `_properties`, and `_links` for richer responses
+- **Clarity** — Clean separation between `success`, `fail` and `error`
+- **Flexibility** — Optional `_references`, `_properties` and `_links` for richer responses
 
 ## 1.2 Why another spec?
 
@@ -40,7 +40,7 @@ If you've worked with APIs before, you've probably seen:
 - `{ "status": "success", "payload": … }` there
 - And somewhere else… a raw stack trace in JSON. 😬
 
-This chaos makes it hard to build **generic clients**, reason about failures, and correlate logs across services. JsonDispatch standardizes the response shape while staying practical and easy to adopt in real systems.
+This chaos makes it hard to build **generic clients**, reason about failures and correlate logs across services. JsonDispatch standardizes the response shape while staying practical and easy to adopt in real systems.
 
 ## 1.3 Core Principles
 
@@ -63,7 +63,7 @@ The server **must** generate and return a unique `X-Request-Id` on every respons
 #### Flexible metadata when you need it
 
 - `_references` → Turn IDs into human-friendly values
-- `_properties` → Describe the data shape, pagination, and deprecations
+- `_properties` → Describe the data shape, pagination and deprecations
 - `_links` → Make collections navigable
 
 #### Versioned but predictable
@@ -147,7 +147,7 @@ JsonDispatch follows [semantic Versioning](https://semver.org/):
   ```
   > **Note**: Servers can still set a vendor media type on responses if needed, but `application/json` is sufficient and preferred.
 
-> `X-Request-Id`, `X-Correlation-Id`, and other tracing headers are covered in **Section 3**.
+> `X-Request-Id`, `X-Correlation-Id` and other tracing headers are covered in **Section 3**.
 
 ### 2.4 Version selection & migration
 
@@ -201,9 +201,128 @@ X-Request-Id: 6c2a3d7e-9d5a-4b61-9b05-d1d8f6a8f4a1
 }
 ```
 
-Clients signal **request major** via `Content-Type` (when they send a body), and servers announce the **exact
-implementation** via `X-Api-Version` in the **response**. No `Accept` gymnastics, and responses stay plain
+Clients signal **request major** via `Content-Type` (when they send a body) and servers announce the **exact
+implementation** via `X-Api-Version` in the **response**. No `Accept` gymnastics and responses stay plain
 `application/json`.
+
+### 2.5 Non-JSON responses (reports & exports)
+
+JsonDispatch defines the **response envelope for JSON**. For binary or tabular deliverables (CSV, PDF, ZIP, images), **return the native media type directly** and keep JsonDispatch for **orchestration endpoints** (job creation, metadata, links).
+
+#### 2.5.1 Direct file delivery
+
+When the endpoint returns a file stream:
+
+**Request**
+
+```http
+GET /reports/activity/download?from=2025-09-01&to=2025-09-30
+Accept: text/csv
+```
+
+**Response**
+
+```http
+HTTP/1.1 200 OK
+Content-Type: text/csv
+Content-Disposition: attachment; filename="activity-report-2025-09.csv"
+X-Api-Version: 1.4.0
+X-Request-Id: 7bfae01e-771c-41d4-b1cf-0ad52d8bce19
+```
+
+> Use the correct `Content-Type` (e.g., `text/csv`, `application/pdf`, `application/zip`) and add `Content-Disposition` for downloads.
+
+#### 2.5.2 Orchestration via JsonDispatch (recommended)
+
+Create the report **asynchronously** and return a JsonDispatch envelope with status and links:
+
+**Request**
+
+```http
+POST /reports/activity
+Content-Type: application/vnd.infocyph.jd.v1+json
+
+{ "from": "2025-09-01", "to": "2025-09-30", "format": "csv" }
+```
+
+**Response**
+
+```http
+HTTP/1.1 202 Accepted
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: 3b2c7a5a-0b2e-4b69-b1a2-1a2c3d4e5f6a
+```
+
+**Body**
+
+```json
+{
+  "status": "success",
+  "message": "Report job accepted",
+  "data": {
+    "report_id": "rep_9KfGH2",
+    "state": "queued",
+    "format": "csv",
+    "expires_at": "2025-10-31T23:59:59Z"
+  },
+  "_links": {
+    "self": "https://api.example.com/reports/activity/rep_9KfGH2",
+    "download": {
+      "href": "https://cdn.example.com/reports/rep_9KfGH2.csv",
+      "meta": { "method": "GET", "expires": "2025-10-31T23:59:59Z" }
+    }
+  },
+  "_properties": {
+    "data": { "type": "object", "name": "report" }
+  }
+}
+```
+
+#### 2.5.3 Streaming & large datasets
+
+For very large exports, consider **streaming** formats:
+
+* **CSV/TSV stream:** `text/csv`
+* **NDJSON stream:** `application/x-ndjson`
+* **Gzip:** add `Content-Encoding: gzip` when appropriate
+
+Pair streaming/download endpoints with a **JsonDispatch status endpoint** so clients can poll readiness and discover `_links.download`.
+
+**Status polling**
+
+```http
+GET /reports/activity/rep_9KfGH2
+Accept: application/json
+```
+
+**Response (ready)**
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: d1c9b15f-9c1e-42d5-9a9e-8b8e5a2b1c0a
+```
+
+**Body**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "report_id": "rep_9KfGH2",
+    "state": "ready",
+    "size_bytes": 9421331
+  },
+  "_links": {
+    "download": "https://cdn.example.com/reports/rep_9KfGH2.csv",
+    "retry": "https://api.example.com/reports/activity/rep_9KfGH2/retry"
+  }
+}
+```
+
+> **Rule of thumb:** Use JsonDispatch for **control, status and discovery**; use native media types for the **actual file bytes**.
 
 ---
 
@@ -211,7 +330,7 @@ implementation** via `X-Api-Version` in the **response**. No `Accept` gymnastics
 
 In production, the hardest bugs are the ones you can’t trace.
 JsonDispatch enforces **consistent tracing identifiers** on every response so developers can connect logs, monitor
-latency, and debug across distributed systems — automatically.
+latency and debug across distributed systems — automatically.
 
 ### 3.1 `X-Request-Id` – server-generated trace ID
 
@@ -220,7 +339,7 @@ Clients do **not** send this header.
 
 **Rules**
 
-* Generated once per inbound request (UUID v4, ULID, or equivalent unique token).
+* Generated once per inbound request (UUID v4, ULID or equivalent unique token).
 * Must be a **string**.
 * Included in **all responses**, including errors.
 * Logged internally for correlation in monitoring and debugging.
@@ -285,7 +404,7 @@ correlation ID.
 
 ### 3.3 Distributed tracing (`traceparent`, `tracestate`)
 
-For systems instrumented with distributed-tracing tools such as **OpenTelemetry**, **Jaeger**, or **Zipkin**,
+For systems instrumented with distributed-tracing tools such as **OpenTelemetry**, **Jaeger** or **Zipkin**,
 JsonDispatch is compatible with the [W3C Trace Context](https://www.w3.org/TR/trace-context/).
 
 These headers complement (not replace) JsonDispatch identifiers:
@@ -346,20 +465,20 @@ A JsonDispatch response body may contain these top-level members:
 
 | Key           | Type   | Required | Purpose                                          |
 |---------------|--------|----------|--------------------------------------------------|
-| `status`      | string | ✅        | Overall result — `success`, `fail`, or `error`   |
+| `status`      | string | ✅        | Overall result — `success`, `fail` or `error`   |
 | `message`     | string | ⚪        | Short, human-readable explanation                |
-| `data`        | mixed  | ⚪        | Main payload (object, array, or scalar)          |
+| `data`        | mixed  | ⚪        | Main payload (object, array or scalar)          |
 | `_references` | object | ⚪        | ID-to-label mapping dictionary                   |
-| `_properties` | object | ⚪        | Metadata describing structure, count, or schema  |
+| `_properties` | object | ⚪        | Metadata describing structure, count or schema  |
 | `_links`      | object | ⚪        | Navigation links (pagination, related resources) |
 
 > ⚪ = optional, depending on the `status` value and context.
 
-### 4.2 `status` — Success, Fail, or Error
+### 4.2 `status` — Success, Fail or Error
 
 The `status` field defines the overall outcome of the request.
 
-* **`success`** → The request completed successfully, and data is returned.
+* **`success`** → The request completed successfully and data is returned.
 * **`fail`** → The client provided invalid input (validation, missing fields, etc.).
 * **`error`** → The server or an external dependency failed to process the request.
 
@@ -389,7 +508,7 @@ Use it as a quick, meaningful summary in logs or UI alerts.
 ### 4.4 `data` — Your Actual Payload
 
 Everything your API returns lives under `data`.
-The format should remain **consistent** for the same `(version, method, and endpoint)` combination.
+The format should remain **consistent** for the same `(version, method and endpoint)` combination.
 
 | Status  | Expected `data` type | Description                          |
 |---------|----------------------|--------------------------------------|
@@ -433,7 +552,7 @@ Now clients can map `"category": 2` → “Tutorial” without additional API ca
 
 ### 4.6 `_properties` — Describing Data Context
 
-`_properties` gives structure-level metadata that describes your payload — useful for UI builders, pagination, or
+`_properties` gives structure-level metadata that describes your payload — useful for UI builders, pagination or
 deprecation notices.
 
 Common keys include:
@@ -466,7 +585,7 @@ Common keys include:
 ### 4.7 `_links` — Pagination and Beyond
 
 `_links` makes your API navigable.
-It can include pagination links, related resources, or documentation references.
+It can include pagination links, related resources or documentation references.
 
 **Example — Pagination**
 
@@ -511,7 +630,7 @@ APIs.
 # 5. Response Examples
 
 Examples are the fastest way to understand JsonDispatch.
-Below are common scenarios — **success**, **fail**, **error**, and **paginated** responses — exactly as they should
+Below are common scenarios — **success**, **fail**, **error** and **paginated** responses — exactly as they should
 appear in production.
 
 ### 5.1  A Simple Success Response
@@ -842,10 +961,100 @@ X-Request-Id: e13a97b3-5a2d-46db-a3b2-f401239b0cba
 }
 ```
 
-### 6.3 Error Codes (`code`) — Symbolic and Actionable
+### 6.3 Field-level vs request-level errors
+
+JsonDispatch lets you express **where** an issue occurred so clients can react precisely.
+
+**Two scopes:**
+
+* **Field-level** — a specific input is invalid.
+  Use a **JSON Pointer–style path** in `source` (e.g., `/data/attributes/email`).
+* **Request-level** — the whole request failed for a non-field reason (rate limit, auth, dependency outage).
+  Use a **concise string** naming the subsystem or concern (e.g., `auth`, `rate-limit`, `payments-gateway`).
+
+**Rules**
+
+* Prefer the most **specific** `source` you can provide.
+* You **may mix** field-level and request-level items in the same `data` array.
+* Keep `title` short; put human-friendly detail in `detail`.
+* Don’t leak internals; subsystem names should be stable, public-safe identifiers.
+
+**Examples**
+
+#### Field-level (`fail`)
+
+```json
+{
+  "status": "fail",
+  "message": "Validation failed",
+  "data": [
+    {
+      "status": 422,
+      "source": "/data/attributes/email",
+      "title": "Invalid email",
+      "detail": "Email must be a valid address."
+    },
+    {
+      "status": 422,
+      "source": "/data/attributes/age",
+      "title": "Out of range",
+      "detail": "Age must be between 13 and 120."
+    }
+  ]
+}
+```
+
+#### Request-level (`error`)
+
+```json
+{
+  "status": "error",
+  "message": "Upstream dependency unavailable",
+  "code": "PAYMENTS_GATEWAY_DOWN",
+  "data": [
+    {
+      "status": 503,
+      "source": "payments-gateway",
+      "title": "Service unavailable",
+      "detail": "No response from provider within 30s."
+    }
+  ]
+}
+```
+
+#### Mixed (some fields invalid, plus a request constraint)
+
+```json
+{
+  "status": "fail",
+  "message": "Request cannot be processed",
+  "data": [
+    {
+      "status": 422,
+      "source": "/data/attributes/items/0/sku",
+      "title": "Unknown SKU",
+      "detail": "SKU ABC-123 was not found."
+    },
+    {
+      "status": 429,
+      "source": "rate-limit",
+      "title": "Too many requests",
+      "detail": "Burst limit exceeded; retry after 15 seconds."
+    }
+  ]
+}
+```
+
+**Client guidance**
+
+* **Highlight fields** with pointer paths; show inline messages near inputs.
+* **Banner or dialog** for request-level issues (`auth`, `rate-limit`, `maintenance`).
+* Consider `status` code for **retry/backoff** behavior (see the next subsections).
+
+### 6.4 Error Codes (`code`) — Symbolic and Actionable
 
 The optional top-level `code` field adds a **business-level meaning** beyond the HTTP status.
-It’s ideal for client logic, dashboards, and automation.
+It’s ideal for client logic, dashboards and automation.
 
 **Guidelines**
 
@@ -863,7 +1072,7 @@ It’s ideal for client logic, dashboards, and automation.
 | `PAYMENT_GATEWAY_DOWN`    | Payment provider not reachable   |
 | `ARTICLE_TITLE_TOO_SHORT` | Validation failure on title      |
 
-### 6.4 Recommended HTTP Status Mapping
+### 6.5 Recommended HTTP Status Mapping
 
 | Scenario                                | `status` | HTTP Status     |
 |-----------------------------------------|----------|-----------------|
@@ -878,7 +1087,7 @@ It’s ideal for client logic, dashboards, and automation.
 | Service unavailable / maintenance       | error    | 503             |
 | Upstream timeout                        | error    | 504             |
 
-### 6.5 Key Takeaways
+### 6.6 Key Takeaways
 
 * Clients never send `X-Request-Id` — the server generates it for traceability.
 * All error and fail responses share the same envelope shape.
@@ -896,7 +1105,7 @@ It introduces two companion sections — `_properties` and `_references` — to 
 ### 7.1 `_properties` — Describe Your Data, Not Just Send It
 
 The `_properties` object carries **metadata about the `data` field**.
-It helps clients understand the payload’s structure, count, pagination, and even its lifecycle (like deprecation or
+It helps clients understand the payload’s structure, count, pagination and even its lifecycle (like deprecation or
 schema changes).
 
 | Field         | Type         | Purpose                                                         |
@@ -964,7 +1173,7 @@ These should directly correspond to the field names inside `data`.
 
 | Use Case                                     | Use `_properties` | Use `_references` |
 |----------------------------------------------|-------------------|-------------------|
-| Describe structure, pagination, or schema    | ✅                 |                   |
+| Describe structure, pagination or schema    | ✅                 |                   |
 | Translate IDs or codes to labels             |                   | ✅                 |
 | Mark field as deprecated or link to template | ✅                 |                   |
 | Enumerate possible options or states         |                   | ✅                 |
@@ -1013,6 +1222,82 @@ Clients can now:
 * Display labels directly using `_references`.
 * Understand that `data` is paginated and typed via `_properties`.
 * Do all this **without extra round-trips** or hard-coded logic.
+
+### 7.5 Nested `_references` Example
+
+Complex datasets often include **hierarchical or multi-level relationships** — e.g. categories, subcategories or status groups.
+JsonDispatch supports **nested `_references`** so you can express those relationships cleanly while keeping the payload compact.
+
+This allows clients to resolve **multi-level identifiers** without multiple API calls.
+
+#### Example — Category → Subcategory → Label Mapping
+
+```json
+{
+  "status": "success",
+  "message": "Product list with hierarchical references",
+  "data": [
+    { "id": 1, "name": "iPhone 15", "category": 10, "subcategory": 101 },
+    { "id": 2, "name": "Galaxy S24", "category": 10, "subcategory": 102 },
+    { "id": 3, "name": "MacBook Air", "category": 20, "subcategory": 201 }
+  ],
+  "_references": {
+    "category": {
+      "10": {
+        "label": "Mobile",
+        "children": {
+          "101": "Apple",
+          "102": "Samsung"
+        }
+      },
+      "20": {
+        "label": "Laptop",
+        "children": {
+          "201": "Apple",
+          "202": "Windows"
+        }
+      }
+    }
+  },
+  "_properties": {
+    "data": {
+      "type": "array",
+      "name": "products",
+      "count": 3
+    }
+  }
+}
+```
+
+#### Explanation
+
+| Field         | Purpose                                                  |
+|---------------|----------------------------------------------------------|
+| `category`    | Maps high-level IDs (`10`, `20`) to parent labels        |
+| `children`    | Maps subcategory IDs to their names under each parent    |
+| `label`       | A friendly label for the parent category                 |
+| `_references` | Keeps the hierarchy readable and cacheable on the client |
+
+#### Why it matters
+
+* **Fewer round-trips** — clients can render category and subcategory labels directly.
+* **Extensible** — future nesting levels (e.g., regions → countries → cities) follow the same pattern.
+* **Localized references** — `_references` can hold language-specific labels if needed.
+
+#### Client behavior
+
+When parsing, clients should:
+
+1. Resolve `subcategory` first within its parent `category`.
+2. Fallback to top-level label if no match found.
+3. Cache `_references` by version to avoid redundant lookups.
+
+✅ **Best practice:**
+Use nested `_references` only when relationships are **stable and bounded**. For dynamic trees, prefer dedicated endpoints (`/categories`, `/locations`).
+
+---
+
+Would you like the next extension — “7.6 Localized `_references` Example (multi-language lookups)” — right after this?
 
 ---
 
@@ -1119,6 +1404,207 @@ It tells clients both *where* to go and *how* to interact, without needing extra
 * Avoid embedding authentication tokens directly in URLs.
 * When possible, pair `_links` with `_properties` to describe pagination metadata (`page`, `count`, etc.).
 
+### 8.5 `_links` for Files and Downloads
+
+APIs frequently serve or reference **files** — such as reports, invoices, exports or media.
+JsonDispatch supports this cleanly through `_links`, using either **direct URLs** or **expirable signed URLs** under a dedicated `file` or `download` key.
+
+This keeps your responses self-descriptive, avoids embedding raw file data and enables clients to access assets securely.
+
+#### Example — Direct File Link (Public Resource)
+
+```json
+{
+  "status": "success",
+  "message": "Activity report generated successfully",
+  "data": {
+    "report_id": "RPT-2025-10-06",
+    "type": "activity",
+    "period": "2025-09",
+    "size": "2.4 MB"
+  },
+  "_links": {
+    "self": "https://api.example.com/reports/RPT-2025-10-06",
+    "file": "https://cdn.example.com/reports/RPT-2025-10-06.pdf"
+  },
+  "_properties": {
+    "data": {
+      "type": "object",
+      "name": "report"
+    }
+  }
+}
+```
+
+✅ Use this when files are **public or long-lived** (e.g., CDN-hosted assets or documentation).
+
+#### Example — Signed File Link (Secure or Temporary Access)
+
+```json
+{
+  "status": "success",
+  "message": "Report ready for download",
+  "data": {
+    "report_id": "RPT-2025-10-06",
+    "type": "activity",
+    "expires_in": 900
+  },
+  "_links": {
+    "self": "https://api.example.com/reports/RPT-2025-10-06",
+    "download": {
+      "href": "https://api.example.com/reports/RPT-2025-10-06/download?token=eyJhbGciOiJIUzI1...",
+      "meta": {
+        "method": "GET",
+        "auth": "required",
+        "expires": "2025-10-06T12:30:00Z"
+      }
+    }
+  }
+}
+```
+
+✅ Use this when:
+
+* Files are **user-specific** or **sensitive** (exports, invoices, personal data).
+* Links must **expire** or require **authentication**.
+* You want to guide clients explicitly on how to fetch the file (via `meta`).
+
+#### Example — Multiple File Formats
+
+```json
+{
+  "_links": {
+    "pdf": "https://cdn.example.com/reports/RPT-2025-10-06.pdf",
+    "csv": "https://cdn.example.com/reports/RPT-2025-10-06.csv",
+    "json": "https://api.example.com/reports/RPT-2025-10-06.json"
+  }
+}
+```
+
+Clients can choose their preferred format programmatically — ideal for exports or analytics dashboards.
+
+#### Best Practices
+
+| Guideline                                            | Why                                                       |
+|------------------------------------------------------|-----------------------------------------------------------|
+| Always use HTTPS links                               | Prevents man-in-the-middle interception                   |
+| Include `meta` when authentication or expiry applies | Clients can display expiry timers or handle refresh logic |
+| Avoid embedding file data inline                     | Reduces payload size and memory footprint                 |
+| Prefer `download` over generic link names            | Keeps semantics consistent across endpoints               |
+
+**✅ Summary**
+
+File links under `_links` make your API:
+
+* **Predictable** → consistent structure for downloads
+* **Secure** → signed URLs and metadata guidance
+* **Portable** → clients can consume them without custom conventions
+
+Perfect — here’s the next addition, **8.6 Inline Media References (Thumbnails, Avatars, etc.)**, written in the same tone, format and Markdown structure as your doc.
+It directly complements **8.5 File Link Example**, keeping `_links` consistent across data and media use cases.
+
+
+### 8.6 `_links` for Inline Media (Thumbnails, Avatars, Previews)
+
+Not every file link is a downloadable document — many APIs include **media previews** such as user avatars, product thumbnails or video stills.
+JsonDispatch keeps this consistent by defining them under `_links.media` or `_links.image`, so clients can handle them predictably.
+
+#### Example — Simple Inline Media Links
+
+```json
+{
+  "status": "success",
+  "message": "User profile fetched successfully",
+  "data": {
+    "id": 99,
+    "name": "A. B. M. Mahmudul Hasan",
+    "role": "admin"
+  },
+  "_links": {
+    "self": "https://api.example.com/users/99",
+    "avatar": "https://cdn.example.com/avatars/99-thumb.jpg"
+  },
+  "_properties": {
+    "data": {
+      "type": "object",
+      "name": "user"
+    }
+  }
+}
+```
+
+✅ Ideal for lightweight references such as **user photos**, **brand icons** or **thumbnail images**.
+
+
+#### Example — Media with Multiple Resolutions or Types
+
+```json
+{
+  "_links": {
+    "self": "https://api.example.com/products/2001",
+    "image": {
+      "small": "https://cdn.example.com/products/2001/small.jpg",
+      "medium": "https://cdn.example.com/products/2001/medium.jpg",
+      "large": "https://cdn.example.com/products/2001/large.jpg"
+    }
+  }
+}
+```
+
+Clients can choose which variant to use — perfect for responsive frontends or apps that cache different image sizes.
+
+
+#### Example — Rich Media Metadata
+
+When returning multiple images, videos or icons, each media entry can include metadata for display and accessibility:
+
+```json
+{
+  "_links": {
+    "thumbnail": {
+      "href": "https://cdn.example.com/products/2001/thumb.webp",
+      "meta": {
+        "width": 120,
+        "height": 120,
+        "type": "image/webp",
+        "alt": "Product preview image"
+      }
+    },
+    "video_preview": {
+      "href": "https://cdn.example.com/products/2001/preview.mp4",
+      "meta": {
+        "duration": 12,
+        "type": "video/mp4",
+        "poster": "https://cdn.example.com/products/2001/thumb.jpg"
+      }
+    }
+  }
+}
+```
+
+✅ This allows advanced clients (e.g. web dashboards, mobile apps) to render previews, use proper MIME types and preload efficiently.
+
+
+#### Best Practices
+
+| Guideline                                                                           | Reason                                       |
+| ----------------------------------------------------------------------------------- | -------------------------------------------- |
+| Use separate keys for image vs. video (e.g. `avatar`, `thumbnail`, `video_preview`) | Keeps structure clear and predictable        |
+| Include `meta.type` for MIME hints (`image/png`, `video/mp4`)                       | Helps browsers and SDKs preload correctly    |
+| Prefer WebP or AVIF for image efficiency                                            | Saves bandwidth for clients                  |
+| Use `_links` — not `_references` — for any URL-based assets                         | Keeps semantics clean (navigation vs lookup) |
+
+
+**✅ Summary**
+
+Inline media links under `_links` let APIs describe:
+
+* **Where** assets are located (`href`)
+* **What** they are (`meta.type`, `meta.alt`)
+* **How** to use them (variants, resolutions, roles)
+
+They make your API **visual-friendly**, **cache-efficient** and **self-documenting** — no guesswork or extra endpoints needed.
+
 ---
 
 # 9. Compatibility & Evolution
@@ -1136,7 +1622,7 @@ When making changes to your API responses:
   Old clients may still depend on it.
 
 * **Never change the type** of an existing field.
-  A string should never become an object, and an object should never become an array.
+  A string should never become an object and an object should never become an array.
 
 * **Only add new fields** (preferably optional ones with sensible defaults).
 
@@ -1195,37 +1681,68 @@ When a breaking change becomes necessary:
 # 10. Best Practices
 
 JsonDispatch provides structure — but your team’s discipline keeps it reliable.
-These best practices ensure consistency, observability, and developer happiness.
+These best practices ensure consistency, observability and developer happiness.
 
 ### 10.1 Always log `X-Request-Id`
 
 * The **server generates** a unique `X-Request-Id` for each response.
-* Include it in all logs, traces, and monitoring dashboards.
+* Include it in all logs, traces and monitoring dashboards.
 * When an issue occurs, that single ID traces the request end-to-end.
 
 > ✅ Treat it as your **primary debugging handle**.
 
-### 10.2 Deprecating Fields Safely
+### 10.2 Deprecation Lifecycle (Field or Endpoint Evolution)
 
-* Never silently remove or rename fields.
-* Mark deprecated ones using `_properties.deprecation`.
-* Provide a migration link in the deprecation URL.
+Deprecation in JsonDispatch isn’t just about marking things as “old.”
+It’s about **communicating intent clearly** — to humans and machines — so clients can migrate smoothly without breaking.
 
-#### Example
+Below is the **recommended lifecycle** for any field, structure or endpoint change.
+
+| Phase                           | Description                                                | Duration / Expectation                     | Implementation Pattern                                                     | Example                                                                              |
+|:--------------------------------|:-----------------------------------------------------------|:-------------------------------------------|:---------------------------------------------------------------------------|:-------------------------------------------------------------------------------------|
+| **1. Active (Default)**         | Field is stable and supported.                             | Ongoing                                    | Regular use; documented and visible.                                       | `"title": "Hello World"`                                                             |
+| **2. Announce Deprecation**     | You’ve introduced a replacement field or version.          | 1 release cycle minimum before enforcement | Mark in `_properties.deprecation` with URL + replacement reference.        | `"legacyTitle": { "deprecation": "https://api.example.com/docs/v2/articles#title" }` |
+| **3. Dual Support Phase**       | Both old and new fields coexist; clients update gradually. | 1–2 release cycles                         | Continue returning both values; prefer new one in docs and examples.       | Old → `legacyTitle`, New → `title`                                                   |
+| **4. Soft Removal (Warn Only)** | Old field still exists but returns a notice or `null`.     | 1 cycle max                                | Include `_properties.legacyTitle.deprecation` + log warnings in responses. | `"legacyTitle": null` + metadata link                                                |
+| **5. Hard Removal**             | Field is no longer returned; major version bump required.  | Next major release                         | Remove from payload; update JSON Schema and docs.                          | Removed in `v2`                                                                      |
+
+
+#### Example — Deprecation Metadata in Action
 
 ```json
 {
+  "status": "success",
+  "message": "Article listed with deprecated field notice",
+  "data": {
+    "id": 42,
+    "legacyTitle": "Hello JD (legacy)",
+    "title": "Hello JsonDispatch"
+  },
   "_properties": {
-    "oldField": {
+    "legacyTitle": {
       "type": "string",
-      "name": "legacy",
-      "deprecation": "https://api.example.com/docs/v2/legacy"
+      "deprecation": "https://api.example.com/docs/v2/articles#title"
+    },
+    "title": {
+      "type": "string",
+      "name": "title"
     }
   }
 }
 ```
 
-This ensures backward compatibility while clearly signaling change.
+✅ The `_properties.legacyTitle.deprecation` URL gives developers a clear migration path — and automated tools can detect deprecation without guessing.
+
+
+#### Quick Rules of Thumb
+
+| Rule                                          | Why                                     |
+| --------------------------------------------- | --------------------------------------- |
+| Never remove without prior deprecation notice | Prevents client crashes                 |
+| Always provide documentation link             | Enables auto-migration and transparency |
+| Keep dual support phase predictable           | Lets clients plan migration windows     |
+| Announce removals in release notes            | Keeps API consumers informed            |
+| Bundle hard removals with major version bumps | Aligns with Semantic Versioning         |
 
 ### 10.3 Response Media Types & Fallbacks
 
@@ -1249,38 +1766,89 @@ X-Api-Version: 1.3.2
 X-Request-Id: b3e9e7c4-9b7b-44c3-a8f3-8c39e612d882
 ```
 
-### 10.4 Security & Data Hygiene
+### 10.4 Security Headers & CORS Policy Recommendations
 
-JsonDispatch focuses on clarity, but safety comes first.
+Even the most elegant API format is useless if it leaks data or opens up attack surfaces.
+JsonDispatch defines **how** you format responses — but your platform must enforce **how** they’re delivered securely.
 
-* **Never leak sensitive internals.**
-  Avoid raw DB IDs, stack traces, or system messages.
+Below are recommended **security headers**, **CORS patterns** and **exposure rules** that align with JsonDispatch’s design.
 
-* **Use UUIDs or opaque tokens** instead of incremental IDs.
+#### 10.4.1 Required Security Headers
 
-* **Validate all `_links` and `_references`.**
-  Ensure URLs are trusted and do not allow injection.
+| Header                          | Example                                        | Purpose                                                                                        |
+|:--------------------------------|:-----------------------------------------------|:-----------------------------------------------------------------------------------------------|
+| **`Content-Security-Policy`**   | `default-src 'none'; frame-ancestors 'none';`  | Prevents browsers from embedding or executing API responses in iframes or cross-site contexts. |
+| **`Strict-Transport-Security`** | `max-age=31536000; includeSubDomains; preload` | Enforces HTTPS and prevents downgrade attacks.                                                 |
+| **`X-Content-Type-Options`**    | `nosniff`                                      | Blocks MIME-type sniffing, ensuring `application/json` stays JSON.                             |
+| **`X-Frame-Options`**           | `DENY`                                         | Prevents clickjacking or UI redress attacks.                                                   |
+| **`Referrer-Policy`**           | `no-referrer`                                  | Avoids leaking private API URLs in browser referrers.                                          |
+| **`Cache-Control`**             | `no-store, no-cache, must-revalidate`          | Prevents sensitive responses (e.g., tokens, user info) from being cached.                      |
+| **`Permissions-Policy`**        | `geolocation=(), microphone=(), camera=()`     | Locks down API-origin capabilities when served via browsers.                                   |
 
-* **Keep public error responses minimal.**
-  Logs can store detailed stack traces, but responses should remain user-safe.
+> **Tip:** You can centralize these headers at reverse proxy level (e.g., Nginx, Caddy or API Gateway) — they don’t need to live inside your application code.
 
-#### Safe Example
+#### 10.4.2 CORS (Cross-Origin Resource Sharing)
+
+If your API is accessed from browsers, define **explicit and minimal** CORS policies.
+
+**Recommended Example**
+
+```http
+Access-Control-Allow-Origin: https://app.example.com
+Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+Access-Control-Allow-Headers: Content-Type, X-Request-Id, X-Correlation-Id, Authorization
+Access-Control-Expose-Headers: X-Request-Id, X-Api-Version, X-Correlation-Id
+Access-Control-Max-Age: 600
+```
+
+✅ Key points:
+
+* Always **whitelist origins**, never use `*` for authenticated APIs.
+* **Expose** `X-Request-Id`, `X-Api-Version` and `X-Correlation-Id` so browser-based clients can log and correlate them.
+* Cache preflight (`OPTIONS`) responses to reduce latency.
+
+#### 10.4.3 Authentication & Error Safety
+
+* Never echo back **raw credentials**, tokens or stack traces in `error` responses.
+  Use safe `code` and `message` fields instead.
+
+* Return **consistent HTTP status codes** (`401`, `403`) for unauthorized access — don’t over-share.
+
+* When using JWT or HMAC signatures, ensure timestamps and expirations are validated server-side.
+
+* **Log `X-Request-Id` with auth context**, but never include sensitive tokens in the same line — to prevent log correlation attacks.
+
+---
+
+#### 10.4.4 Example Safe Error Response (Auth Context)
 
 ```json
 {
-  "status": "error",
-  "message": "Temporary backend outage",
-  "code": "DB_CONN_TIMEOUT",
+  "status": "fail",
+  "message": "Authentication required",
   "data": [
     {
-      "status": 503,
-      "source": "db-service",
-      "title": "Timeout",
-      "detail": "Please try again later."
+      "status": 401,
+      "source": "auth-service",
+      "title": "Invalid or missing token",
+      "detail": "Please provide a valid Authorization header."
     }
   ]
 }
 ```
+
+This tells the user exactly what’s wrong — without exposing internals.
+
+####  10.4.5 Summary: Security Sanity Checklist
+
+| ✅ Task                                       | Why it matters                   |
+|----------------------------------------------|----------------------------------|
+| HTTPS enforced (`Strict-Transport-Security`) | Prevents MITM attacks            |
+| No open `Access-Control-Allow-Origin: *`     | Blocks cross-site token leakage  |
+| `nosniff` and `DENY` headers applied         | Stops MIME confusion & framing   |
+| Only expose safe headers (`X-*`)             | Prevents internal header leakage |
+| Minimal, consistent error structure          | Avoids sensitive info exposure   |
+
 
 ### 10.5 Use `_properties` and `_references` Generously
 
@@ -1310,9 +1878,198 @@ Example:
 }
 ```
 
+### 10.6 Operational Logging, Correlation, Monitoring & Security
+
+JsonDispatch isn’t just a response format — it’s the foundation of your API **observability contract**.
+When used consistently, it becomes the single source of truth for **debugging, monitoring, auditing and compliance**.
+
+#### 10.6.1 Unified Structured Logging
+
+Every service should emit structured logs with consistent keys — machine-parseable and human-readable.
+
+| Field              | Source   | Purpose                                      |
+|--------------------|----------|----------------------------------------------|
+| `timestamp`        | system   | When the event occurred                      |
+| `level`            | system   | Severity (`INFO`, `WARN`, `ERROR`)           |
+| `service`          | config   | Service name (`checkout-api`, `risk-worker`) |
+| `route`            | request  | HTTP method + path                           |
+| `status`           | response | HTTP status code                             |
+| `duration_ms`      | response | Request duration                             |
+| `x_request_id`     | header   | Per-request trace ID                         |
+| `x_correlation_id` | header   | Workflow-level trace ID                      |
+| `user_id`          | context  | Acting user or system ID                     |
+| `remote_ip`        | request  | Client IP (sanitized if needed)              |
+
+**Example log line**
+
+```
+[2025-10-06T10:22:51Z] INFO  service=checkout-api
+  route=POST /checkout duration=284ms status=201
+  request_id=019fb440-4e83-4b1b-bef9-44a80771f181
+  correlation_id=order-2025-10-05-777 user_id=U9912
+```
+
+✅ **Tip:** Always start each log entry with `request_id` for fast filtering in log pipelines.
+
+---
+
+#### 10.6.2 Cross-Service Correlation Flow
+
+Each inbound call generates a unique **`X-Request-Id`**, while **`X-Correlation-Id`** persists across the entire workflow.
+
+| Service           | `X-Correlation-Id`     | `X-Request-Id` | Role            |
+|-------------------|------------------------|----------------|-----------------|
+| `checkout-api`    | `order-2025-10-05-777` | `019f…`        | Entry point     |
+| `payment-api`     | Propagated             | `020a…`        | Downstream call |
+| `shipping-worker` | Propagated             | `021b…`        | Background task |
+
+```
+order-2025-10-05-777
+├── [checkout-api] 019f…
+├── [payment-api]  020a…
+└── [shipping-job] 021b…
+```
+
+Search by `correlation_id` to see the entire transaction chain.
+
+
+#### 10.6.3 Integration with APM & Trace Systems
+
+Attach JsonDispatch IDs to your tracing spans for full observability.
+
+**Example span attributes**
+
+```json
+{
+  "trace_id": "00f067aa0ba902b7",
+  "request_id": "019fb440-4e83-4b1b-bef9-44a80771f181",
+  "correlation_id": "order-2025-10-05-777",
+  "service.name": "checkout-api",
+  "http.status_code": 201,
+  "duration_ms": 284
+}
+```
+
+✅ **Best Practice:** Mirror these IDs in logs, traces and metrics — enabling one-click navigation from error to trace to log line.
+
+#### 10.6.4 Health & Readiness Endpoints
+
+Expose `/health` and `/ready` endpoints using the JsonDispatch envelope.
+This ensures monitoring tools receive a consistent, parsable format.
+
+**Example**
+
+```http
+GET /health
+Accept: application/json
+```
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: 44f0d7e2-c9b2-4a61-9b2a-1cf41b922021
+```
+
+```json
+{
+  "status": "success",
+  "message": "Service healthy",
+  "data": {
+    "uptime": "4d 06h 22m",
+    "load": 0.21,
+    "dependencies": {
+      "database": "ok",
+      "redis": "ok",
+      "queue": "delayed(1)"
+    }
+  },
+  "_properties": {
+    "data": { "type": "object", "name": "health" }
+  }
+}
+```
+
+*Return `status:error` with `503` if any dependency fails.*
+
+#### 10.6.5 Metrics & Monitoring Snapshots
+
+Expose lightweight `/metrics` or `/stats` endpoints for quantitative insights.
+
+```json
+{
+  "status": "success",
+  "message": "Metrics snapshot",
+  "data": {
+    "requests_per_minute": 1240,
+    "average_latency_ms": 182,
+    "active_users": 341,
+    "error_rate_percent": 0.6
+  },
+  "_properties": {
+    "data": {
+      "type": "object",
+      "name": "metrics",
+      "template": "https://spec.infocyph.com/jsondispatch/metrics.schema.json"
+    }
+  }
+}
+```
+
+This allows Grafana, Prometheus exporters or custom dashboards to consume metrics in the same JSON format as all other responses.
+
+#### 10.6.6 Security & Audit Hooks
+
+JsonDispatch headers and IDs also power **audit trails** and **forensic analysis**.
+Integrate them into your audit subsystem.
+
+**Audit Log Entry Example**
+
+```json
+{
+  "timestamp": "2025-10-06T11:44:10Z",
+  "action": "USER_DELETE",
+  "actor_id": "admin-42",
+  "target_id": "user-983",
+  "result": "success",
+  "request_id": "bafc98e0-33a1-41e9-90e4-0234cf19a311",
+  "correlation_id": "session-2384",
+  "ip": "203.0.113.12"
+}
+```
+
+**Security Best Practices**
+
+* 🔒 **Mask sensitive fields** (PII, credentials, tokens) before logging.
+* 🧩 **Validate `_links` URLs** to prevent malicious injection.
+* 🧮 **Use UUIDs or hashes** instead of numeric IDs in responses.
+* 🕵️ **Correlate admin actions** via `X-Request-Id` in audit reports.
+* 🧱 **Rotate and retain logs** per compliance policy (GDPR, PCI-DSS, ISO 27001).
+* 📈 **Trigger alerts** when error rates exceed thresholds, grouped by `service` and `correlation_id`.
+
+#### 10.6.7 Operational Governance Checklist
+
+| Category        | Key Practice                                             | Why It Matters                 |
+|-----------------|----------------------------------------------------------|--------------------------------|
+| **Tracing**     | Generate `X-Request-Id` for every response               | Root-cause visibility          |
+| **Correlation** | Reuse `X-Correlation-Id` across related calls            | End-to-end transaction tracing |
+| **Logging**     | Emit structured JSON logs                                | Machine-readable monitoring    |
+| **Security**    | Mask sensitive info before logging                       | Data protection & compliance   |
+| **Monitoring**  | Return JsonDispatch envelopes for `/health` & `/metrics` | Uniform automation             |
+| **Audit**       | Store IDs with every admin or financial action           | Forensic traceability          |
+| **Alerts**      | Integrate with APM / log aggregator                      | Real-time anomaly detection    |
+
+---
+
+✅ **Key Takeaway**
+
+JsonDispatch is not just a response contract — it’s the **observability spine** of your platform.
+When tracing, metrics, logs and audits all share the same IDs and envelope style,
+your API ecosystem becomes **self-diagnosing, self-auditing and self-healing**.
+
 # 11. Appendix
 
-The Appendix provides **reference materials, reserved conventions, and developer tools** for teams implementing or
+The Appendix provides **reference materials, reserved conventions and developer tools** for teams implementing or
 integrating JsonDispatch.
 
 It’s meant as a **quick lookup section** — not something you memorize, but something you check when building middleware,
@@ -1359,7 +2116,7 @@ Avoid reusing them for other meanings.
 |---------------|-------------------------------------------------------|
 | `status`      | Overall outcome (`success`, `fail`, `error`)          |
 | `message`     | Human-readable message                                |
-| `data`        | Primary content (object, array, or list of errors)    |
+| `data`        | Primary content (object, array or list of errors)    |
 | `code`        | Business-level error code (only in `error` responses) |
 | `_references` | Lookup tables for IDs → labels                        |
 | `_properties` | Metadata describing structure or pagination           |
@@ -1386,7 +2143,7 @@ Here’s what a typical implementation might include:
     * `JsonDispatch::success($data, $message)`
     * `JsonDispatch::fail($errors, $message)`
     * `JsonDispatch::error($code, $errors, $message)`
-* Automatically append `_links`, `_properties`, and `_references` if provided.
+* Automatically append `_links`, `_properties` and `_references` if provided.
 
 **Logging integration**
 
