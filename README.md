@@ -1249,8 +1249,6 @@ These should directly correspond to the field names inside `data`.
 | Mark field as deprecated or link to template | ✅                 |                   |
 | Enumerate possible options or states         |                   | ✅                 |
 
----
-
 ### 7.4 Example — Combined in One Response
 
 ```json
@@ -1365,10 +1363,6 @@ When parsing, clients should:
 
 ✅ **Best practice:**
 Use nested `_references` only when relationships are **stable and bounded**. For dynamic trees, prefer dedicated endpoints (`/categories`, `/locations`).
-
----
-
-Would you like the next extension — “7.6 Localized `_references` Example (multi-language lookups)” — right after this?
 
 ---
 
@@ -1889,8 +1883,6 @@ Access-Control-Max-Age: 600
 
 * **Log `X-Request-Id` with auth context**, but never include sensitive tokens in the same line — to prevent log correlation attacks.
 
----
-
 #### 10.4.4 Example Safe Error Response (Auth Context)
 
 ```json
@@ -1981,8 +1973,6 @@ Every service should emit structured logs with consistent keys — machine-parse
 ```
 
 ✅ **Tip:** Always start each log entry with `request_id` for fast filtering in log pipelines.
-
----
 
 #### 10.6.2 Cross-Service Correlation Flow
 
@@ -2129,8 +2119,6 @@ Integrate them into your audit subsystem.
 | **Monitoring**  | Return JsonDispatch envelopes for `/health` & `/metrics` | Uniform automation             |
 | **Audit**       | Store IDs with every admin or financial action           | Forensic traceability          |
 | **Alerts**      | Integrate with APM / log aggregator                      | Real-time anomaly detection    |
-
----
 
 ✅ **Key Takeaway**
 
