@@ -1703,9 +1703,6 @@ For large batch operations, consider providing just the summary initially with l
 ---
 
 # 6. Error Handling
----
-
-# 6. Error Handling
 
 Errors are where consistency matters most.
 If every service formats errors differently, debugging turns into chaos.
