@@ -10,84 +10,113 @@ Welcome! This site hosts the JsonDispatch specification and examples.
 ## Contents
 
 [1. Introduction](#1-introduction)  
-  [1.2 Why Another Spec?](#12-why-another-spec)  
-  [1.3 Core Principles](#13-core-principles)
+[1.2 Why Another Spec?](#12-why-another-spec)  
+[1.3 Core Principles](#13-core-principles)
 
 [2. Media Types & Versioning](#2-media-types--versioning)  
-  [2.1 Media Type Explained (with Examples)](#21-media-type-explained-with-examples)  
-  [2.2 Versioning Strategy (Major/Minor/Patch)](#22-versioning-strategy-majorminorpatch)  
-  [2.3 Required & Recommended Headers](#23-required--recommended-headers)  
-  [2.4 Version Selection & Migration](#24-version-selection--migration)  
-  [2.5 Non-JSON Responses (Reports & Exports)](#25-non-json-responses-reports--exports)  
-    [2.5.1 Direct File Delivery](#251-direct-file-delivery)  
-    [2.5.2 Orchestration via JsonDispatch (Recommended)](#252-orchestration-via-jsondispatch-recommended)  
-    [2.5.3 Streaming & Large Datasets](#253-streaming--large-datasets)
+[2.1 Media Type Explained (with Examples)](#21-media-type-explained-with-examples)  
+[2.2 Versioning Strategy (Major/Minor/Patch)](#22-versioning-strategy-majorminorpatch)  
+[2.3 Required & Recommended Headers](#23-required--recommended-headers)  
+[2.4 Version Selection & Migration](#24-version-selection--migration)  
+[2.5 Non-JSON Responses (Reports & Exports)](#25-non-json-responses-reports--exports)  
+[2.5.1 Direct File Delivery](#251-direct-file-delivery)  
+[2.5.2 Orchestration via JsonDispatch (Recommended)](#252-orchestration-via-jsondispatch-recommended)  
+[2.5.3 Streaming & Large Datasets](#253-streaming--large-datasets)  
+[2.6 Authentication & Authorization](#26-authentication--authorization)  
+[2.6.1 Authentication Token Placement](#261-authentication-token-placement)  
+[2.6.2 Authentication Failure Responses](#262-authentication-failure-responses)  
+[2.6.3 Authorization (403 Forbidden)](#263-authorization-403-forbidden)  
+[2.6.4 API Key Authentication](#264-api-key-authentication)  
+[2.6.5 OAuth 2.0 & Token Refresh](#265-oauth-20--token-refresh)
 
 [3. Request & Response Identification](#3-request--response-identification)  
-  [3.1 X-Request-Id – Server-Generated Trace ID](#31-x-request-id--server-generated-trace-id)  
-  [3.2 X-Correlation-Id – Linking Related Operations](#32-x-correlation-id--linking-related-operations)  
-  [3.3 Distributed Tracing (traceparent, tracestate)](#33-distributed-tracing-traceparent-tracestate)
+[3.1 X-Request-Id – Server-Generated Trace ID](#31-x-request-id--server-generated-trace-id)  
+[3.2 X-Correlation-Id – Linking Related Operations](#32-x-correlation-id--linking-related-operations)  
+[3.3 Distributed Tracing (traceparent, tracestate)](#33-distributed-tracing-traceparent-tracestate)  
+[3.4 Rate Limiting](#34-rate-limiting)  
+[3.4.1 Rate Limit Headers](#341-rate-limit-headers)  
+[3.4.2 Rate Limit Exceeded Response](#342-rate-limit-exceeded-response)  
+[3.4.3 Rate Limiting Strategies](#343-rate-limiting-strategies)
 
 [4. Response Envelope (The Outer Wrapper)](#4-response-envelope-the-outer-wrapper)  
-  [4.1 Top-Level Members at a Glance](#41-top-level-members-at-a-glance)  
-  [4.2 `status` — Success, Fail or Error](#42-status--success-fail-or-error)  
-  [4.3 `message` — Keep It Human-Friendly](#43-message--keep-it-human-friendly)  
-  [4.4 `data` — Your Actual Payload](#44-data--your-actual-payload)  
-  [4.5 `_references` — Turning IDs Into Meaning](#45-_references--turning-ids-into-meaning)  
-  [4.6 `_properties` — Describing Data Context](#46-_properties--describing-data-context)  
-  [4.7 `_links` — Pagination and Beyond](#47-_links--pagination-and-beyond)  
-  [4.8 Envelope Summary](#48-envelope-summary)
+[4.1 Top-Level Members at a Glance](#41-top-level-members-at-a-glance)  
+[4.2 `status` — Success, Fail or Error](#42-status--success-fail-or-error)  
+[4.3 `message` — Keep It Human-Friendly](#43-message--keep-it-human-friendly)  
+[4.4 `data` — Your Actual Payload](#44-data--your-actual-payload)  
+[4.5 `_references` — Turning IDs Into Meaning](#45-_references--turning-ids-into-meaning)  
+[4.6 `_properties` — Describing Data Context](#46-_properties--describing-data-context)  
+[4.7 `_links` — Pagination and Beyond](#47-_links--pagination-and-beyond)  
+[4.8 Envelope Summary](#48-envelope-summary)
 
 [5. Response Examples](#5-response-examples)  
-  [5.1 A Simple Success Response](#51-a-simple-success-response)  
-  [5.2 A Fail Response (Validation Issue)](#52-a-fail-response-validation-issue)  
-  [5.3 An Error Response (System Failure)](#53-an-error-response-system-failure)  
-  [5.4 Paginated Collection Response](#54-paginated-collection-response)  
-  [5.5 References in Action](#55-references-in-action)
+[5.1 A Simple Success Response](#51-a-simple-success-response)  
+[5.2 A Fail Response (Validation Issue)](#52-a-fail-response-validation-issue)  
+[5.3 An Error Response (System Failure)](#53-an-error-response-system-failure)  
+[5.4 Paginated Collection Response](#54-paginated-collection-response)  
+[5.5 References in Action](#55-references-in-action)  
+[5.6 Async & Long-Running Operations](#56-async--long-running-operations)  
+[5.6.1 Initiating an Async Job (202 Accepted)](#561-initiating-an-async-job-202-accepted)  
+[5.6.2 Polling for Job Status](#562-polling-for-job-status)  
+[5.6.3 Webhook Notifications](#563-webhook-notifications)  
+[5.6.4 Job Failure Handling](#564-job-failure-handling)  
+[5.7 Bulk Operations & Partial Success](#57-bulk-operations--partial-success)  
+[5.7.1 Partial Success Response Structure](#571-partial-success-response-structure)  
+[5.7.2 Atomic vs Non-Atomic Operations](#572-atomic-vs-non-atomic-operations)  
+[5.7.3 Batch Result Summary](#573-batch-result-summary)
 
 [6. Error Handling](#6-error-handling)  
-  [6.1 `fail` vs `error` — Know the Difference](#61-fail-vs-error--know-the-difference)  
-  [6.2 Error Object Structure](#62-error-object-structure)  
-  [6.3 Field-Level vs Request-Level Errors](#63-field-level-vs-request-level-errors)  
-  [6.4 Error Codes (`code`) — Symbolic and Actionable](#64-error-codes-code--symbolic-and-actionable)  
-  [6.5 Recommended HTTP Status Mapping](#65-recommended-http-status-mapping)  
-  [6.6 Key Takeaways](#66-key-takeaways)
+[6.1 `fail` vs `error` — Know the Difference](#61-fail-vs-error--know-the-difference)  
+[6.2 Error Object Structure](#62-error-object-structure)  
+[6.3 Field-Level vs Request-Level Errors](#63-field-level-vs-request-level-errors)  
+[6.4 Error Codes (`code`) — Symbolic and Actionable](#64-error-codes-code--symbolic-and-actionable)  
+[6.5 Recommended HTTP Status Mapping](#65-recommended-http-status-mapping)  
+[6.6 Key Takeaways](#66-key-takeaways)
 
 [7. Properties & References](#7-properties--references)  
-  [7.1 `_properties` — Describe Your Data](#71-_properties--describe-your-data-not-just-send-it)  
-  [7.2 `_references` — Replace IDs with Meaning](#72-_references--replace-ids-with-meaning)  
-  [7.3 Choosing Between Them](#73-choosing-between-them)  
-  [7.4 Example — Combined in One Response](#74-example--combined-in-one-response)  
-  [7.5 Nested `_references` Example](#75-nested-_references-example)
+[7.1 `_properties` — Describe Your Data](#71-_properties--describe-your-data-not-just-send-it)  
+[7.2 `_references` — Replace IDs with Meaning](#72-_references--replace-ids-with-meaning)  
+[7.3 Choosing Between Them](#73-choosing-between-them)  
+[7.4 Example — Combined in One Response](#74-example--combined-in-one-response)  
+[7.5 Nested `_references` Example](#75-nested-_references-example)
 
 [8. Links](#8-links)  
-  [8.1 `_links` for Pagination](#81-_links-for-pagination)  
-  [8.2 `_links` for Related Resources](#82-_links-for-related-resources)  
-  [8.3 `_links` with Metadata (Enriched Links)](#83-_links-with-metadata-enriched-links)  
-  [8.4 Best Practices for `_links`](#84-best-practices-for-_links)  
-  [8.5 `_links` for Files and Downloads](#85-_links-for-files-and-downloads)  
-  [8.6 `_links` for Inline Media (Thumbnails, Avatars, Previews)](#86-_links-for-inline-media-thumbnails-avatars-previews)
+[8.1 `_links` for Pagination](#81-_links-for-pagination)  
+[8.2 `_links` for Related Resources](#82-_links-for-related-resources)  
+[8.3 `_links` with Metadata (Enriched Links)](#83-_links-with-metadata-enriched-links)  
+[8.4 Best Practices for `_links`](#84-best-practices-for-_links)  
+[8.5 `_links` for Files and Downloads](#85-_links-for-files-and-downloads)  
+[8.6 `_links` for Inline Media (Thumbnails, Avatars, Previews)](#86-_links-for-inline-media-thumbnails-avatars-previews)
 
 [9. Compatibility & Evolution](#9-compatibility--evolution)  
-  [9.1 Core Compatibility Rules](#91-core-compatibility-rules)  
-  [9.2 How to Introduce Breaking Changes](#92-how-to-introduce-breaking-changes)  
-  [9.3 Recommended Evolution Workflow](#93-recommended-evolution-workflow)
+[9.1 Core Compatibility Rules](#91-core-compatibility-rules)  
+[9.2 How to Introduce Breaking Changes](#92-how-to-introduce-breaking-changes)  
+[9.3 Recommended Evolution Workflow](#93-recommended-evolution-workflow)
 
 [10. Best Practices](#10-best-practices)  
-  [10.1 Always Log `X-Request-Id`](#101-always-log-x-request-id)  
-  [10.2 Deprecation Lifecycle (Field or Endpoint Evolution)](#102-deprecation-lifecycle-field-or-endpoint-evolution)  
-  [10.3 Response Media Types & Fallbacks](#103-response-media-types--fallbacks)  
-  [10.4 Security Headers & CORS Policy Recommendations](#104-security-headers--cors-policy-recommendations)  
-  [10.5 Use `_properties` and `_references` Generously](#105-use-_properties-and-_references-generously)  
-  [10.6 Operational Logging, Correlation, Monitoring & Security](#106-operational-logging-correlation-monitoring--security)
+[10.1 Always Log `X-Request-Id`](#101-always-log-x-request-id)  
+[10.2 Deprecation Lifecycle (Field or Endpoint Evolution)](#102-deprecation-lifecycle-field-or-endpoint-evolution)  
+[10.3 Response Media Types & Fallbacks](#103-response-media-types--fallbacks)  
+[10.4 Security Headers & CORS Policy Recommendations](#104-security-headers--cors-policy-recommendations)  
+[10.5 Use `_properties` and `_references` Generously](#105-use-_properties-and-_references-generously)  
+[10.6 Operational Logging, Correlation, Monitoring & Security](#106-operational-logging-correlation-monitoring--security)  
+[10.7 Security Best Practices](#107-security-best-practices)  
+[10.7.1 Error Message Sanitization](#1071-error-message-sanitization)  
+[10.7.2 Rate Limiting Error Responses](#1072-rate-limiting-error-responses)  
+[10.7.3 Stack Trace Handling](#1073-stack-trace-handling)  
+[10.7.4 Sensitive Data in Logs](#1074-sensitive-data-in-logs)  
+[10.8 Client Library Guidelines](#108-client-library-guidelines)  
+[10.8.1 Retry Strategies](#1081-retry-strategies)  
+[10.8.2 Timeout Recommendations](#1082-timeout-recommendations)  
+[10.8.3 Malformed Response Handling](#1083-malformed-response-handling)  
+[10.8.4 Response Validation](#1084-response-validation)
 
 [11. Appendix](#11-appendix)  
-  [11.1 Reserved Headers (Response Only)](#111-reserved-headers-response-only)  
-  [11.2 Reserved Keywords (Top-Level JSON Keys)](#112-reserved-keywords-top-level-json-keys)  
-  [11.3 Middleware & Utility Patterns](#113-middleware--utility-patterns)  
-  [11.4 Minimal JSON Schema for the Envelope (Dev Tooling)](#114-minimal-json-schema-for-the-envelope-dev-tooling)  
-  [11.5 Example cURL Requests (Version & Headers)](#115-example-curl-requests-version--headers)  
-  [11.6 Developer Notes](#116-developer-notes)
+[11.1 Reserved Headers (Response Only)](#111-reserved-headers-response-only)  
+[11.2 Reserved Keywords (Top-Level JSON Keys)](#112-reserved-keywords-top-level-json-keys)  
+[11.3 Middleware & Utility Patterns](#113-middleware--utility-patterns)  
+[11.4 Minimal JSON Schema for the Envelope (Dev Tooling)](#114-minimal-json-schema-for-the-envelope-dev-tooling)  
+[11.5 Example cURL Requests (Version & Headers)](#115-example-curl-requests-version--headers)  
+[11.6 Developer Notes](#116-developer-notes)
 
 ---
 
@@ -395,6 +424,181 @@ X-Request-Id: d1c9b15f-9c1e-42d5-9a9e-8b8e5a2b1c0a
 
 > **Rule of thumb:** Use JsonDispatch for **control, status and discovery**; use native media types for the **actual file bytes**.
 
+## 2.6 Authentication & authorization
+
+JsonDispatch APIs typically require authentication. This section defines where authentication credentials should be placed and how authentication failures map to the response envelope.
+
+### 2.6.1 Authentication token placement
+
+**Recommended:** Use the `Authorization` header with a bearer token for API authentication.
+
+```http
+GET /api/v1/users/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Accept: application/json
+```
+
+**Alternative patterns:**
+
+* **API Keys:** `X-Api-Key: your-api-key-here`
+* **Basic Auth:** `Authorization: Basic base64(username:password)` (HTTPS only)
+* **Cookie-based:** `Cookie: session_id=abc123` (for browser clients)
+
+> **Security note:** Never send credentials in query parameters or URL paths, as they may be logged by proxies, CDNs or web servers.
+
+### 2.6.2 Authentication failure responses
+
+When authentication fails (missing, invalid or expired token), return **`401 Unauthorized`** with a `fail` status.
+
+**Example: Missing token**
+
+```http
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: f47ac10b-58cc-4372-a567-0e02b2c3d479
+WWW-Authenticate: Bearer realm="API"
+```
+
+```json
+{
+  "status": "fail",
+  "message": "Authentication required",
+  "data": {
+    "errors": [
+      {
+        "field": "Authorization",
+        "code": "AUTH_MISSING",
+        "message": "No authentication token provided"
+      }
+    ]
+  }
+}
+```
+
+**Example: Invalid or expired token**
+
+```http
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: 550e8400-e29b-41d4-a716-446655440000
+WWW-Authenticate: Bearer realm="API", error="invalid_token"
+```
+
+```json
+{
+  "status": "fail",
+  "message": "Invalid or expired authentication token",
+  "data": {
+    "errors": [
+      {
+        "field": "Authorization",
+        "code": "AUTH_INVALID",
+        "message": "Token signature verification failed"
+      }
+    ]
+  },
+  "_links": {
+    "refresh": "https://api.example.com/auth/refresh",
+    "login": "https://api.example.com/auth/login"
+  }
+}
+```
+
+### 2.6.3 Authorization (403 Forbidden)
+
+When a user is **authenticated** but lacks **permission** to access a resource, return **`403 Forbidden`** with a `fail` status.
+
+```http
+HTTP/1.1 403 Forbidden
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: 6ba7b810-9dad-11d1-80b4-00c04fd430c8
+```
+
+```json
+{
+  "status": "fail",
+  "message": "Access denied",
+  "data": {
+    "errors": [
+      {
+        "field": "resource",
+        "code": "PERMISSION_DENIED",
+        "message": "You do not have permission to delete this resource"
+      }
+    ]
+  }
+}
+```
+
+### 2.6.4 API key authentication
+
+For server-to-server communication, API keys can be used:
+
+```http
+GET /api/v1/webhooks
+X-Api-Key: sk_live_51H8rQ2eZvKYlo2C8...
+Accept: application/json
+```
+
+**Failed API key authentication:**
+
+```http
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+```
+
+```json
+{
+  "status": "fail",
+  "message": "Invalid API key",
+  "data": {
+    "errors": [
+      {
+        "field": "X-Api-Key",
+        "code": "INVALID_API_KEY",
+        "message": "The provided API key is invalid or has been revoked"
+      }
+    ]
+  }
+}
+```
+
+### 2.6.5 OAuth 2.0 & token refresh
+
+For OAuth 2.0 flows, expired access tokens should return `401` with a hint to refresh:
+
+```json
+{
+  "status": "fail",
+  "message": "Access token expired",
+  "data": {
+    "errors": [
+      {
+        "field": "Authorization",
+        "code": "TOKEN_EXPIRED",
+        "message": "Access token has expired. Use refresh token to obtain a new one"
+      }
+    ]
+  },
+  "_links": {
+    "refresh": "https://api.example.com/oauth/token"
+  },
+  "_properties": {
+    "token": {
+      "expired_at": "2025-10-22T14:30:00Z",
+      "type": "Bearer"
+    }
+  }
+}
+```
+
+> **Best practice:** Always include `WWW-Authenticate` header in 401 responses to help clients understand the authentication scheme.
+
 ---
 
 # 3. Request & Response Identification
@@ -513,6 +717,176 @@ tracestate: congo=t61rcWkgMzE
 | `X-Api-Version`    | Response → | Server JsonDispatch version identifier   | ✅ Yes      |
 | `traceparent`      | Both ↔     | Distributed tracing (W3C)                | ⚪ Optional |
 | `tracestate`       | Both ↔     | Vendor-specific tracing metadata         | ⚪ Optional |
+
+### 3.4 Rate limiting
+
+To protect API resources and ensure fair usage, JsonDispatch recommends standard rate limiting headers that inform clients about their current usage and limits.
+
+### 3.4.1 Rate limit headers
+
+Include these headers in **all successful responses** (and optionally in error responses):
+
+**Standard approach (X-prefixed headers):**
+
+| Header                    | Description                                          | Example       |
+|---------------------------|------------------------------------------------------|---------------|
+| `X-RateLimit-Limit`       | Maximum requests allowed in the current window       | `1000`        |
+| `X-RateLimit-Remaining`   | Requests remaining in the current window             | `987`         |
+| `X-RateLimit-Reset`       | Unix timestamp when the rate limit resets            | `1698249600`  |
+| `X-RateLimit-Window`      | Duration of the rate limit window (optional)         | `3600` (1h)   |
+
+**Example response with rate limit headers:**
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: 9b7f3c2a-4e1d-4f8c-a3b2-1e5d6c8f9a0b
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 987
+X-RateLimit-Reset: 1698249600
+```
+
+**IETF Draft Standard (optional alternative):**
+
+JsonDispatch also supports the [IETF RateLimit Header Fields draft](https://datatracker.ietf.org/doc/html/draft-ietf-httpapi-ratelimit-headers) which uses non-prefixed headers:
+
+| Header                | Description                                          | Example              |
+|-----------------------|------------------------------------------------------|----------------------|
+| `RateLimit-Limit`     | Maximum requests allowed in the current window       | `1000`               |
+| `RateLimit-Remaining` | Requests remaining in the current window             | `987`                |
+| `RateLimit-Reset`     | Seconds until the rate limit resets                  | `3600`               |
+| `RateLimit-Policy`    | Rate limit policy definition                         | `1000;w=3600`        |
+
+**Example response with IETF Draft headers:**
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: 9b7f3c2a-4e1d-4f8c-a3b2-1e5d6c8f9a0b
+RateLimit-Limit: 1000
+RateLimit-Remaining: 987
+RateLimit-Reset: 3600
+RateLimit-Policy: 1000;w=3600
+```
+
+> **Note:** The main difference is that `RateLimit-Reset` uses seconds (delta) while `X-RateLimit-Reset` uses a Unix timestamp. Choose one approach consistently across your API.
+
+**Policy format:**
+
+The `RateLimit-Policy` header describes the rate limit window:
+- `1000;w=3600` = 1000 requests per 3600 seconds (1 hour)
+- `100;w=60` = 100 requests per 60 seconds (1 minute)
+- `10000;w=86400` = 10000 requests per 86400 seconds (24 hours)
+
+**Combined approach (maximum compatibility):**
+
+For maximum compatibility, you may send both header styles:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: 9b7f3c2a-4e1d-4f8c-a3b2-1e5d6c8f9a0b
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 987
+X-RateLimit-Reset: 1698249600
+RateLimit-Limit: 1000
+RateLimit-Remaining: 987
+RateLimit-Reset: 3600
+RateLimit-Policy: 1000;w=3600
+```
+
+> **Recommendation:** If you're building a new API, prefer the IETF Draft headers as they may become an official standard. For existing APIs, continue with X-prefixed headers for backward compatibility.
+
+### 3.4.2 Rate limit exceeded response
+
+When a client exceeds their rate limit, return **`429 Too Many Requests`** with a `fail` status:
+
+```http
+HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1698249600
+Retry-After: 3600
+```
+
+```json
+{
+  "status": "fail",
+  "message": "Rate limit exceeded",
+  "data": {
+    "errors": [
+      {
+        "code": "RATE_LIMIT_EXCEEDED",
+        "message": "You have exceeded the rate limit of 1000 requests per hour"
+      }
+    ]
+  },
+  "_properties": {
+    "rate_limit": {
+      "limit": 1000,
+      "remaining": 0,
+      "reset_at": "2025-10-22T16:00:00Z",
+      "retry_after_seconds": 3600
+    }
+  },
+  "_links": {
+    "upgrade": "https://example.com/pricing",
+    "docs": "https://docs.example.com/rate-limits"
+  }
+}
+```
+
+> **Note:** Include the `Retry-After` header (in seconds) to tell clients when they can retry.
+
+### 3.4.3 Rate limiting strategies
+
+JsonDispatch supports various rate limiting strategies:
+
+**Per-user rate limiting**
+
+Rate limits tied to authenticated user accounts:
+
+```http
+X-RateLimit-Limit: 5000
+X-RateLimit-Remaining: 4872
+X-RateLimit-Reset: 1698253200
+```
+
+**Per-API-key rate limiting**
+
+Different limits for different API keys or service tiers:
+
+```http
+X-RateLimit-Limit: 100000
+X-RateLimit-Remaining: 99234
+X-RateLimit-Reset: 1698253200
+```
+
+**Per-endpoint rate limiting**
+
+Some endpoints may have stricter limits than others. Use `_properties` to communicate this:
+
+```json
+{
+  "status": "success",
+  "data": { ... },
+  "_properties": {
+    "rate_limit": {
+      "endpoint_limit": 100,
+      "endpoint_remaining": 87,
+      "endpoint_window": "60s"
+    }
+  }
+}
+```
+
+> **Best practice:** Always log rate limit violations with `X-Request-Id` to identify abusive patterns and help legitimate users understand their usage.
 
 ---
 
@@ -939,6 +1313,396 @@ Can be immediately resolved using `_references`:
 * `X-Api-Version` and `X-Request-Id` are generated by the **server**, not clients.
 * The envelope is consistent — clients only need to check `status` and read `data`.
 
+
+### 5.6 Async & long-running operations
+
+Some operations take too long to complete within a typical HTTP request timeout (e.g., report generation, video processing, batch imports). JsonDispatch provides a consistent pattern for handling asynchronous jobs.
+
+### 5.6.1 Initiating an async job (202 accepted)
+
+When a request is accepted but processing is deferred, return **`202 Accepted`** with job information:
+
+**Request:**
+
+```http
+POST /api/v1/reports/quarterly
+Content-Type: application/vnd.infocyph.jd.v1+json
+Authorization: Bearer eyJhbGci...
+
+{
+  "year": 2025,
+  "quarter": 3,
+  "format": "pdf"
+}
+```
+
+**Response:**
+
+```http
+HTTP/1.1 202 Accepted
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: 8f3d4e2a-9b1c-4f5e-8a7d-2c3b4d5e6f7a
+Location: https://api.example.com/api/v1/jobs/job_7x9Kp2Qm
+```
+
+```json
+{
+  "status": "success",
+  "message": "Report generation job created",
+  "data": {
+    "job_id": "job_7x9Kp2Qm",
+    "state": "pending",
+    "created_at": "2025-10-22T14:30:00Z",
+    "estimated_completion": "2025-10-22T14:35:00Z"
+  },
+  "_links": {
+    "self": "https://api.example.com/api/v1/jobs/job_7x9Kp2Qm",
+    "cancel": {
+      "href": "https://api.example.com/api/v1/jobs/job_7x9Kp2Qm",
+      "meta": { "method": "DELETE" }
+    }
+  },
+  "_properties": {
+    "job": {
+      "type": "report_generation",
+      "priority": "normal",
+      "expires_at": "2025-10-29T14:30:00Z"
+    }
+  }
+}
+```
+
+> **Key elements:**
+> - `Location` header points to the job status endpoint
+> - `state` field indicates current job status (`pending`, `processing`, `completed`, `failed`)
+> - `_links.self` provides the polling URL
+
+### 5.6.2 Polling for job status
+
+Clients poll the job status URL to check progress:
+
+**Request:**
+
+```http
+GET /api/v1/jobs/job_7x9Kp2Qm
+Accept: application/json
+Authorization: Bearer eyJhbGci...
+```
+
+**Response (processing):**
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e
+```
+
+```json
+{
+  "status": "success",
+  "message": "Job is processing",
+  "data": {
+    "job_id": "job_7x9Kp2Qm",
+    "state": "processing",
+    "progress": 65,
+    "updated_at": "2025-10-22T14:33:00Z"
+  },
+  "_properties": {
+    "progress": {
+      "percentage": 65,
+      "current_step": "Generating charts",
+      "total_steps": 5
+    }
+  }
+}
+```
+
+**Response (completed):**
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: 3c4d5e6f-7a8b-4c9d-0e1f-2a3b4c5d6e7f
+```
+
+```json
+{
+  "status": "success",
+  "message": "Job completed successfully",
+  "data": {
+    "job_id": "job_7x9Kp2Qm",
+    "state": "completed",
+    "completed_at": "2025-10-22T14:34:30Z",
+    "result": {
+      "file_size": 2458123,
+      "file_type": "application/pdf"
+    }
+  },
+  "_links": {
+    "download": {
+      "href": "https://cdn.example.com/reports/Q3-2025.pdf",
+      "meta": {
+        "method": "GET",
+        "expires_at": "2025-10-29T14:34:30Z"
+      }
+    }
+  }
+}
+```
+
+> **Polling best practices:**
+> - Use exponential backoff (start with 1s, increase to 5s, 10s, 30s)
+> - Respect `Retry-After` headers if provided
+> - Set a maximum polling duration (e.g., 10 minutes) before timing out
+
+### 5.6.3 Webhook notifications
+
+For better efficiency, clients can register webhooks instead of polling:
+
+**Job creation with webhook:**
+
+```http
+POST /api/v1/reports/quarterly
+Content-Type: application/vnd.infocyph.jd.v1+json
+
+{
+  "year": 2025,
+  "quarter": 3,
+  "webhook_url": "https://client.example.com/webhooks/reports"
+}
+```
+
+**Webhook payload (on completion):**
+
+```http
+POST /webhooks/reports
+Content-Type: application/json
+X-Webhook-Signature: sha256=2f5a1b8c...
+X-Request-Id: 4d5e6f7a-8b9c-4d0e-1f2a-3b4c5d6e7f8a
+
+{
+  "event": "job.completed",
+  "job_id": "job_7x9Kp2Qm",
+  "state": "completed",
+  "completed_at": "2025-10-22T14:34:30Z",
+  "_links": {
+    "job": "https://api.example.com/api/v1/jobs/job_7x9Kp2Qm",
+    "download": "https://cdn.example.com/reports/Q3-2025.pdf"
+  }
+}
+```
+
+> **Security:** Always verify webhook signatures using HMAC-SHA256 or similar.
+
+### 5.6.4 Job failure handling
+
+When a job fails, the status endpoint returns the failure details:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: 5e6f7a8b-9c0d-4e1f-2a3b-4c5d6e7f8a9b
+```
+
+```json
+{
+  "status": "success",
+  "message": "Job status retrieved",
+  "data": {
+    "job_id": "job_7x9Kp2Qm",
+    "state": "failed",
+    "failed_at": "2025-10-22T14:33:15Z",
+    "error": {
+      "code": "INSUFFICIENT_DATA",
+      "message": "Unable to generate report: Q3 data is incomplete"
+    }
+  },
+  "_links": {
+    "retry": {
+      "href": "https://api.example.com/api/v1/reports/quarterly",
+      "meta": { "method": "POST" }
+    }
+  }
+}
+```
+
+> **Note:** The outer `status` is `success` because the API call to retrieve the job status succeeded. The job's internal `state` is `failed`.
+
+### 5.7 Bulk operations & partial success
+
+When processing multiple items in a single request (e.g., batch create, bulk delete, import operations), some items may succeed while others fail. JsonDispatch provides a consistent pattern for representing partial success scenarios.
+
+### 5.7.1 Partial success response structure
+
+For operations where some items succeed and others fail, use **`207 Multi-Status`** with detailed per-item results:
+
+**Request:**
+
+```http
+POST /api/v1/users/bulk
+Content-Type: application/vnd.infocyph.jd.v1+json
+
+{
+  "users": [
+    { "email": "alice@example.com", "name": "Alice" },
+    { "email": "bob@example.com", "name": "Bob" },
+    { "email": "invalid-email", "name": "Charlie" },
+    { "email": "alice@example.com", "name": "Duplicate Alice" }
+  ]
+}
+```
+
+**Response:**
+
+```http
+HTTP/1.1 207 Multi-Status
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: 6f7a8b9c-0d1e-4f2a-3b4c-5d6e7f8a9b0c
+```
+
+```json
+{
+  "status": "success",
+  "message": "Bulk operation completed with partial success",
+  "data": {
+    "summary": {
+      "total": 4,
+      "succeeded": 2,
+      "failed": 2
+    },
+    "results": [
+      {
+        "index": 0,
+        "status": "success",
+        "data": {
+          "id": "usr_1A2B3C",
+          "email": "alice@example.com"
+        }
+      },
+      {
+        "index": 1,
+        "status": "success",
+        "data": {
+          "id": "usr_4D5E6F",
+          "email": "bob@example.com"
+        }
+      },
+      {
+        "index": 2,
+        "status": "fail",
+        "errors": [
+          {
+            "field": "email",
+            "code": "INVALID_EMAIL",
+            "message": "Invalid email format"
+          }
+        ]
+      },
+      {
+        "index": 3,
+        "status": "fail",
+        "errors": [
+          {
+            "field": "email",
+            "code": "DUPLICATE_EMAIL",
+            "message": "Email already exists"
+          }
+        ]
+      }
+    ]
+  },
+  "_properties": {
+    "data": {
+      "type": "bulk_result",
+      "operation": "user_creation"
+    }
+  }
+}
+```
+
+> **Key elements:**
+> - Outer `status` is `success` (the bulk request itself succeeded)
+> - `summary` provides aggregate counts
+> - Each item in `results` has its own `status` (`success` or `fail`)
+> - `index` maps back to the original request array position
+
+### 5.7.2 Atomic vs non-atomic operations
+
+**Atomic operations (all-or-nothing):**
+
+If the operation is transactional and any failure should rollback all changes, return standard error responses:
+
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+X-Api-Version: 1.4.0
+X-Request-Id: 7a8b9c0d-1e2f-4a3b-4c5d-6e7f8a9b0c1d
+```
+
+```json
+{
+  "status": "fail",
+  "message": "Bulk operation failed. No changes were applied",
+  "data": {
+    "errors": [
+      {
+        "index": 2,
+        "field": "email",
+        "code": "INVALID_EMAIL",
+        "message": "Invalid email format at index 2"
+      }
+    ]
+  },
+  "_properties": {
+    "operation": {
+      "type": "atomic",
+      "rollback": true
+    }
+  }
+}
+```
+
+**Non-atomic operations (best-effort):**
+
+Use `207 Multi-Status` as shown in section 5.7.1 when partial success is acceptable.
+
+> **API design tip:** Clearly document in your API specification whether bulk endpoints are atomic or non-atomic.
+
+### 5.7.3 Batch result summary
+
+For large batch operations, consider providing just the summary initially with links to detailed results:
+
+```json
+{
+  "status": "success",
+  "message": "Bulk import completed",
+  "data": {
+    "batch_id": "batch_9x8y7z",
+    "summary": {
+      "total": 10000,
+      "succeeded": 9847,
+      "failed": 153,
+      "processing_time_ms": 45230
+    }
+  },
+  "_links": {
+    "failures": "https://api.example.com/api/v1/batches/batch_9x8y7z/failures",
+    "successes": "https://api.example.com/api/v1/batches/batch_9x8y7z/successes",
+    "download_report": "https://api.example.com/api/v1/batches/batch_9x8y7z/report.csv"
+  }
+}
+```
+
+> **Performance tip:** For operations processing >1000 items, use async jobs (section 5.6) instead of synchronous bulk endpoints.
+
+---
+
+# 6. Error Handling
 ---
 
 # 6. Error Handling
@@ -2145,6 +2909,17 @@ They should **never** be redefined for other purposes.
 | **`X-Api-Version`**              | Response  | ✅        | Full semantic version of the server’s JsonDispatch implementation                     |
 | **`X-Request-Id`**               | Response  | ✅        | Unique identifier generated by the server for this specific request/response          |
 | **`X-Correlation-Id`**           | Response  | ⚪        | Optional; groups multiple related requests under one workflow                         |
+| **`X-RateLimit-Limit`**          | Response  | ⚪        | Optional; maximum requests allowed in the current window                              |
+| **`X-RateLimit-Remaining`**      | Response  | ⚪        | Optional; requests remaining in the current window                                    |
+| **`X-RateLimit-Reset`**          | Response  | ⚪        | Optional; Unix timestamp when the rate limit resets                                   |
+| **`RateLimit-Limit`**            | Response  | ⚪        | Optional; IETF Draft alternative for maximum requests allowed                         |
+| **`RateLimit-Remaining`**        | Response  | ⚪        | Optional; IETF Draft alternative for requests remaining                               |
+| **`RateLimit-Reset`**            | Response  | ⚪        | Optional; IETF Draft alternative (seconds until reset, not timestamp)                 |
+| **`RateLimit-Policy`**           | Response  | ⚪        | Optional; IETF Draft policy format (e.g., `1000;w=3600`)                              |
+| **`Retry-After`**                | Response  | ⚪        | Optional; seconds to wait before retrying (for 429 and 503 responses)                 |
+| **`Deprecation`**                | Response  | ⚪        | Optional; indicates the endpoint is deprecated (true or RFC 8594 date)                |
+| **`Sunset`**                     | Response  | ⚪        | Optional; RFC 8594 date when the endpoint will be removed                             |
+| **`WWW-Authenticate`**           | Response  | ⚪        | Optional; authentication scheme for 401 responses                                     |
 | **`traceparent` / `tracestate`** | Response  | ⚪        | Optional; W3C Trace Context headers if distributed tracing is enabled                 |
 
 > ⚠️ Clients **should not** send `X-Request-Id` or `X-Api-Version` —
@@ -2175,7 +2950,7 @@ Avoid reusing them for other meanings.
 |---------------|-------------------------------------------------------|
 | `status`      | Overall outcome (`success`, `fail`, `error`)          |
 | `message`     | Human-readable message                                |
-| `data`        | Primary content (object, array or list of errors)    |
+| `data`        | Primary content (object, array or list of errors)     |
 | `code`        | Business-level error code (only in `error` responses) |
 | `_references` | Lookup tables for IDs → labels                        |
 | `_properties` | Metadata describing structure or pagination           |
@@ -2331,4 +3106,3 @@ X-Correlation-Id: order-2025-10-05-xyz
 * Always include `X-Api-Version` in responses — even for errors.
 
 * JsonDispatch responses remain **valid JSON** even for plain `application/json` clients.
-
