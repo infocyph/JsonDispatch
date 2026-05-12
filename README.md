@@ -3,7 +3,7 @@
 Welcome! This site hosts the JsonDispatch specification and examples.
 
 - **What is it?** A lightweight, production-ready JSON response spec.
-- **Why use it?** Stable envelope (`success`/`fail`/`error`), server-generated tracing with `X-Request-Id` and clear version signaling via `X-Api-Version`.
+- **Why use it?** Stable envelope (`success`/`fail`/`error`), server-generated tracing with `X-Request-Id` and clear version signaling via request `X-Api-Version` and response `X-Api-Version-Selected`.
 
 ---
 
@@ -17,6 +17,7 @@ Welcome! This site hosts the JsonDispatch specification and examples.
 [2.1 Media Type Explained (with Examples)](#21-media-type-explained-with-examples)  
 [2.2 Versioning Strategy (Major/Minor/Patch)](#22-versioning-strategy-majorminorpatch)  
 [2.3 Required & Recommended Headers](#23-required--recommended-headers)  
+[2.3.1 Negotiation and Version Error Matrix](#231-negotiation-and-version-error-matrix)
 [2.4 Version Selection & Migration](#24-version-selection--migration)  
 [2.5 Non-JSON Responses (Reports & Exports)](#25-non-json-responses-reports--exports)  
 [2.5.1 Direct File Delivery](#251-direct-file-delivery)  
@@ -91,6 +92,7 @@ Welcome! This site hosts the JsonDispatch specification and examples.
 [9.1 Core Compatibility Rules](#91-core-compatibility-rules)  
 [9.2 How to Introduce Breaking Changes](#92-how-to-introduce-breaking-changes)  
 [9.3 Recommended Evolution Workflow](#93-recommended-evolution-workflow)
+[9.4 Version Lifecycle Enforcement](#94-version-lifecycle-enforcement)
 
 [10. Best Practices](#10-best-practices)  
 [10.1 Always Log `X-Request-Id`](#101-always-log-x-request-id)  
@@ -117,6 +119,7 @@ Welcome! This site hosts the JsonDispatch specification and examples.
 [11.4 Minimal JSON Schema for the Envelope (Dev Tooling)](#114-minimal-json-schema-for-the-envelope-dev-tooling)  
 [11.5 Example cURL Requests (Version & Headers)](#115-example-curl-requests-version--headers)  
 [11.6 Developer Notes](#116-developer-notes)
+[11.7 Response Body Conventions](#117-response-body-conventions)
 
 ---
 
@@ -168,21 +171,24 @@ The server **must** generate and return a unique `X-Request-Id` on every respons
 
 #### Versioned but predictable
 
-- **Response** carries `X-Api-Version` (full SemVer) — clients can log and reason about the exact server implementation.
-- **`Accept` stays `application/json`** — clients don't need custom accept negotiation to consume JsonDispatch.
+- **Requests** send `X-Api-Version` (full SemVer) to declare the desired API version.
+- **Response** carries `X-Api-Version-Selected` (full SemVer) to confirm the version actually served.
+- **`Accept` uses the JsonDispatch vendor media type** (e.g., `application/vnd.infocyph.jd.v1+json`) on JSON endpoints.
 
 ---
 
 # 2. Media types & versioning
 
-As your API evolves, clients need a stable way to understand **which shape they're getting** and how to **migrate** when it changes. JsonDispatch solves this by versioning **request media types** and signaling the **exact server version** in a response header.
+As your API evolves, clients need a stable way to understand **which shape they're getting** and how to **migrate** when it changes. JsonDispatch solves this by using a **request version header** plus request media types, and signaling the **exact served version** in a response header.
 
 ## 2.1 Media type explained (with examples)
 
-For requests with a body, set a JsonDispatch vendor media type in `Content-Type`:
+For JsonDispatch JSON endpoints, send the vendor media type in `Accept`:
+
+**Request**
 
 ```http
-Content-Type: application/vnd.infocyph.jd.v1+json
+Accept: application/vnd.infocyph.jd.v1+json
 ```
 
 ### Media type breakdown
@@ -193,7 +199,7 @@ Content-Type: application/vnd.infocyph.jd.v1+json
 - **`v1`** → **Major** version of the request format (configurable)
 - **`+json`** → JSON syntax suffix (static)
 
-> **Responses** can simply use `Content-Type: application/json` while still following the JsonDispatch envelope.
+> **Responses** can simply use `Content-Type: application/json; charset=utf-8` while still following the JsonDispatch envelope.
 
 ### Examples
 
@@ -207,69 +213,117 @@ JsonDispatch follows [semantic Versioning](https://semver.org/):
 - **Minor (v1.1 → v1.2)**: Backward-compatible additions
 - **Patch (v1.0.0 → v1.0.1)**: Backward-compatible bug fixes
 
-> **Key point**: The **request media type** carries the **major** version: `…jd.v1+json`.
-> The server's full version is in `X-Api-Version` (e.g., `1.3.0`).
+> **Key point**: The request header `X-Api-Version` carries the desired full version (e.g., `1.3.0`).
+> The request media type in `Accept` carries the request-format **major** version: `…jd.v1+json`.
+> The server’s served version is returned in `X-Api-Version-Selected`.
 
-- **Do not** use `Accept` for version negotiation; keep it `application/json` if you send it at all.
+- **Do not** use `Content-Type` for API version negotiation.
+- For requests with a JSON body, use `Content-Type: application/json; charset=utf-8`.
 
 ## 2.3 Required & recommended headers
 
-### Requests (with body)
+### Requests
 
 - **MUST** send:
+**Request**
+
   ```http
-  Content-Type: application/vnd.<vendor>.jd.v<MAJOR>+json
+  X-Api-Version: <MAJOR.MINOR.PATCH>
   ```
   Example:
+**Request**
+
   ```http
-  Content-Type: application/vnd.infocyph.jd.v1+json
+  X-Api-Version: 1.4.0
   ```
 
-- **SHOULD NOT** use `Accept` for versioning. If present, keep it:
+- **MUST** send for JsonDispatch JSON endpoints:
+**Request**
+
   ```http
-  Accept: application/json
+  Accept: application/vnd.<vendor>.jd.v<MAJOR>+json
+  ```
+  Example:
+**Request**
+
+  ```http
+  Accept: application/vnd.infocyph.jd.v1+json
+  ```
+
+- Clients **MAY** send multiple media types in `Accept` (comma-separated). The server **MUST** select the first supported media type, or return `406 Not Acceptable` when none are supported.
+
+- For requests with a JSON body, **MUST** send:
+**Request**
+
+  ```http
+  Content-Type: application/json; charset=utf-8
   ```
 
 ### Responses
 
 - **MUST** send:
+**Response**
+
   ```http
-  X-Api-Version: <MAJOR.MINOR.PATCH>
+  X-Api-Version-Selected: <MAJOR.MINOR.PATCH>
   ```
   Example:
+**Response**
+
   ```http
-  X-Api-Version: 1.4.0
+  X-Api-Version-Selected: 1.4.0
   ```
 
 - **MAY** send:
+**Response**
+
   ```http
-  Content-Type: application/json
+  Content-Type: application/json; charset=utf-8
   ```
   > **Note**: Servers can still set a vendor media type on responses if needed, but `application/json` is sufficient and preferred.
 
 > `X-Request-Id`, `X-Correlation-Id` and other tracing headers are covered in **Section 3**.
 
+### 2.3.1 Negotiation and version error matrix
+
+Use the following status codes consistently for protocol-level request problems:
+
+| Condition | Status | Required behavior |
+|---|---|---|
+| `X-Api-Version` missing or malformed | `400` | Return `fail` with a machine-readable error code (for example `API_VERSION_INVALID`). |
+| JsonDispatch JSON endpoint receives unsupported `Accept` media type | `406` | Return `fail` and include supported media types in the error detail. |
+| Request includes JSON body with unsupported `Content-Type` | `415` | Return `fail` and require `Content-Type: application/json; charset=utf-8`. |
+| Requested version is retired (past sunset window) | `410` | Return `fail` and include migration guidance to a supported version. |
+
+For deprecated-but-still-supported versions, continue serving responses and include `Deprecation` and `Sunset` headers to signal migration timing.
+
 ### 2.4 Version selection & migration
 
-* The **server controls** the response envelope version. Clients do **not** negotiate via `Accept`.
-* When you introduce a **breaking change**, bump the **request** major (e.g., `v1 → v2`) and keep returning
-  `application/json` in the response with an updated `X-Api-Version`.
+* The **server controls** the response envelope version via `X-Api-Version-Selected`.
+* When you introduce a **breaking change**, bump the **request** major (e.g., `v1 → v2`), request the new full version
+  via `X-Api-Version`, and keep returning `application/json` with `X-Api-Version-Selected`.
 
 **Create (client → server)**
 
+**Request**
+
 ```http
 POST /articles
-Content-Type: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
+Accept: application/vnd.infocyph.jd.v1+json
+Content-Type: application/json; charset=utf-8
 
 { "title": "Hello JD" }
 ```
 
 **Response (server → client)**
 
+**Response**
+
 ```http
 HTTP/1.1 201 Created
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 1f1f6a2e-0c8f-4f7f-9b4b-5d2d0a3f5b99
 
 {
@@ -280,19 +334,25 @@ X-Request-Id: 1f1f6a2e-0c8f-4f7f-9b4b-5d2d0a3f5b99
 
 **After a breaking change** (client updates request major):
 
+**Request**
+
 ```http
 POST /articles
-Content-Type: application/vnd.infocyph.jd.v2+json
+X-Api-Version: 2.0.0
+Accept: application/vnd.infocyph.jd.v2+json
+Content-Type: application/json; charset=utf-8
 
 { "title": "Hello JD v2" }
 ```
 
 **Server response**
 
+**Response**
+
 ```http
 HTTP/1.1 201 Created
-Content-Type: application/json
-X-Api-Version: 2.0.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 2.0.0
 X-Request-Id: 6c2a3d7e-9d5a-4b61-9b05-d1d8f6a8f4a1
 
 {
@@ -301,9 +361,9 @@ X-Request-Id: 6c2a3d7e-9d5a-4b61-9b05-d1d8f6a8f4a1
 }
 ```
 
-Clients signal **request major** via `Content-Type` (when they send a body) and servers announce the **exact
-implementation** via `X-Api-Version` in the **response**. No `Accept` gymnastics and responses stay plain
-`application/json`.
+Clients signal the desired API version via `X-Api-Version` and the request-format major via `Accept`. When sending
+a JSON body, use `Content-Type: application/json; charset=utf-8`. Servers announce the **exact implementation
+served** via `X-Api-Version-Selected` in the **response**.
 
 ### 2.5 Non-JSON responses (reports & exports)
 
@@ -318,6 +378,7 @@ When the endpoint returns a file stream:
 ```http
 GET /reports/activity/download?from=2025-09-01&to=2025-09-30
 Accept: text/csv
+X-Api-Version: 1.4.0
 ```
 
 **Response**
@@ -326,7 +387,7 @@ Accept: text/csv
 HTTP/1.1 200 OK
 Content-Type: text/csv
 Content-Disposition: attachment; filename="activity-report-2025-09.csv"
-X-Api-Version: 1.4.0
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 7bfae01e-771c-41d4-b1cf-0ad52d8bce19
 ```
 
@@ -340,7 +401,9 @@ Create the report **asynchronously** and return a JsonDispatch envelope with sta
 
 ```http
 POST /reports/activity
-Content-Type: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
+Accept: application/vnd.infocyph.jd.v1+json
+Content-Type: application/json; charset=utf-8
 
 { "from": "2025-09-01", "to": "2025-09-30", "format": "csv" }
 ```
@@ -349,8 +412,8 @@ Content-Type: application/vnd.infocyph.jd.v1+json
 
 ```http
 HTTP/1.1 202 Accepted
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 3b2c7a5a-0b2e-4b69-b1a2-1a2c3d4e5f6a
 ```
 
@@ -391,17 +454,22 @@ Pair streaming/download endpoints with a **JsonDispatch status endpoint** so cli
 
 **Status polling**
 
+**Request**
+
 ```http
 GET /reports/activity/rep_9KfGH2
-Accept: application/json
+Accept: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
 ```
 
 **Response (ready)**
 
+**Response**
+
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: d1c9b15f-9c1e-42d5-9a9e-8b8e5a2b1c0a
 ```
 
@@ -432,10 +500,19 @@ JsonDispatch APIs typically require authentication. This section defines where a
 
 **Recommended:** Use the `Authorization` header with a bearer token for API authentication.
 
+Interoperability note:
+
+* Preferred format: `Authorization: Bearer <token>`.
+* Servers **MAY** accept `Authorization: token <token>` for compatibility with older clients.
+* If JWT is used, clients **MUST** send the `Bearer` scheme.
+
+**Request**
+
 ```http
 GET /api/v1/users/me
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-Accept: application/json
+Accept: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
 ```
 
 **Alternative patterns:**
@@ -452,10 +529,12 @@ When authentication fails (missing, invalid or expired token), return **`401 Una
 
 **Example: Missing token**
 
+**Response**
+
 ```http
 HTTP/1.1 401 Unauthorized
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: f47ac10b-58cc-4372-a567-0e02b2c3d479
 WWW-Authenticate: Bearer realm="API"
 ```
@@ -478,10 +557,12 @@ WWW-Authenticate: Bearer realm="API"
 
 **Example: Invalid or expired token**
 
+**Response**
+
 ```http
 HTTP/1.1 401 Unauthorized
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 550e8400-e29b-41d4-a716-446655440000
 WWW-Authenticate: Bearer realm="API", error="invalid_token"
 ```
@@ -510,10 +591,12 @@ WWW-Authenticate: Bearer realm="API", error="invalid_token"
 
 When a user is **authenticated** but lacks **permission** to access a resource, return **`403 Forbidden`** with a `fail` status.
 
+**Response**
+
 ```http
 HTTP/1.1 403 Forbidden
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 6ba7b810-9dad-11d1-80b4-00c04fd430c8
 ```
 
@@ -537,18 +620,23 @@ X-Request-Id: 6ba7b810-9dad-11d1-80b4-00c04fd430c8
 
 For server-to-server communication, API keys can be used:
 
+**Request**
+
 ```http
 GET /api/v1/webhooks
 X-Api-Key: sk_live_51H8rQ2eZvKYlo2C8...
-Accept: application/json
+Accept: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
 ```
 
 **Failed API key authentication:**
 
+**Response**
+
 ```http
 HTTP/1.1 401 Unauthorized
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
 ```
 
@@ -623,17 +711,22 @@ Clients do **not** send this header.
 
 **Client → Server**
 
+**Request**
+
 ```http
 GET /articles
-Accept: application/json
+Accept: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
 ```
 
 **Server → Client**
 
+**Response**
+
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 7e0e7b45-1e89-4a7f-bbd3-f7ac73fae951
 ```
 
@@ -656,9 +749,13 @@ shared **correlation ID** links them together.
 
 **Client → Server**
 
+**Request**
+
 ```http
 POST /checkout
-Content-Type: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
+Accept: application/vnd.infocyph.jd.v1+json
+Content-Type: application/json; charset=utf-8
 X-Correlation-Id: order-2025-10-05-777
 
 { "cartId": "C10045" }
@@ -666,10 +763,12 @@ X-Correlation-Id: order-2025-10-05-777
 
 **Server → Client**
 
+**Response**
+
 ```http
 HTTP/1.1 201 Created
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 019fb440-4e83-4b1b-bef9-44a80771f181
 X-Correlation-Id: order-2025-10-05-777
 ```
@@ -689,9 +788,12 @@ These headers complement (not replace) JsonDispatch identifiers:
 
 **Example**
 
+**Request**
+
 ```http
 GET /profile
-Accept: application/json
+Accept: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
 traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
 tracestate: congo=t61rcWkgMzE
 ```
@@ -700,8 +802,8 @@ tracestate: congo=t61rcWkgMzE
 
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 1b0c9d4b-eaa2-40d0-8715-fc93e6fefb99
 X-Correlation-Id: session-998877
 traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
@@ -714,7 +816,8 @@ tracestate: congo=t61rcWkgMzE
 |--------------------|------------|------------------------------------------|------------|
 | `X-Request-Id`     | Response → | Unique server-generated request trace ID | ✅ Yes      |
 | `X-Correlation-Id` | Both ↔     | Link related requests in a workflow      | ⚪ Optional |
-| `X-Api-Version`    | Response → | Server JsonDispatch version identifier   | ✅ Yes      |
+| `X-Api-Version`    | Request →  | Requested JsonDispatch API version       | ✅ Yes      |
+| `X-Api-Version-Selected`    | Response → | Server JsonDispatch version identifier   | ✅ Yes      |
 | `traceparent`      | Both ↔     | Distributed tracing (W3C)                | ⚪ Optional |
 | `tracestate`       | Both ↔     | Vendor-specific tracing metadata         | ⚪ Optional |
 
@@ -737,10 +840,12 @@ Include these headers in **all successful responses** (and optionally in error r
 
 **Example response with rate limit headers:**
 
+**Response**
+
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 9b7f3c2a-4e1d-4f8c-a3b2-1e5d6c8f9a0b
 X-RateLimit-Limit: 1000
 X-RateLimit-Remaining: 987
@@ -760,10 +865,12 @@ JsonDispatch also supports the [IETF RateLimit Header Fields draft](https://data
 
 **Example response with IETF Draft headers:**
 
+**Response**
+
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 9b7f3c2a-4e1d-4f8c-a3b2-1e5d6c8f9a0b
 RateLimit-Limit: 1000
 RateLimit-Remaining: 987
@@ -784,10 +891,12 @@ The `RateLimit-Policy` header describes the rate limit window:
 
 For maximum compatibility, you may send both header styles:
 
+**Response**
+
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 9b7f3c2a-4e1d-4f8c-a3b2-1e5d6c8f9a0b
 X-RateLimit-Limit: 1000
 X-RateLimit-Remaining: 987
@@ -804,10 +913,12 @@ RateLimit-Policy: 1000;w=3600
 
 When a client exceeds their rate limit, return **`429 Too Many Requests`** with a `fail` status:
 
+**Response**
+
 ```http
 HTTP/1.1 429 Too Many Requests
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
 X-RateLimit-Limit: 1000
 X-RateLimit-Remaining: 0
@@ -852,6 +963,8 @@ JsonDispatch supports various rate limiting strategies:
 
 Rate limits tied to authenticated user accounts:
 
+**Response**
+
 ```http
 X-RateLimit-Limit: 5000
 X-RateLimit-Remaining: 4872
@@ -861,6 +974,8 @@ X-RateLimit-Reset: 1698253200
 **Per-API-key rate limiting**
 
 Different limits for different API keys or service tiers:
+
+**Response**
 
 ```http
 X-RateLimit-Limit: 100000
@@ -1084,15 +1199,16 @@ appear in production.
 
 ```http
 GET /articles/42
-Accept: application/json
+Accept: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
 ```
 
 **Response**
 
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/json
-X-Api-Version: 1.3.1
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.3.1
 X-Request-Id: aabbccdd-1122-3344-5566-77889900aabb
 ```
 
@@ -1126,8 +1242,9 @@ X-Request-Id: aabbccdd-1122-3344-5566-77889900aabb
 
 ```http
 POST /articles
-Content-Type: application/vnd.infocyph.jd.v1+json
-Accept: application/json
+Accept: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
 ```
 
 **Body**
@@ -1143,8 +1260,8 @@ Accept: application/json
 
 ```http
 HTTP/1.1 422 Unprocessable Entity
-Content-Type: application/json
-X-Api-Version: 1.3.1
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.3.1
 X-Request-Id: f4b44a6e-d593-11ec-9d64-0242ac120002
 ```
 
@@ -1177,15 +1294,16 @@ X-Request-Id: f4b44a6e-d593-11ec-9d64-0242ac120002
 
 ```http
 GET /articles
-Accept: application/json
+Accept: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
 ```
 
 **Response**
 
 ```http
 HTTP/1.1 503 Service Unavailable
-Content-Type: application/json
-X-Api-Version: 1.3.1
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.3.1
 X-Request-Id: c043e23a-4b26-4a05-96c4-5c60fcc18d50
 ```
 
@@ -1213,15 +1331,16 @@ X-Request-Id: c043e23a-4b26-4a05-96c4-5c60fcc18d50
 
 ```http
 GET /articles?page=2&limit=3
-Accept: application/json
+Accept: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
 ```
 
 **Response**
 
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/json
-X-Api-Version: 1.3.1
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.3.1
 X-Request-Id: 77aa88bb-ccdd-eeff-0011-223344556677
 ```
 
@@ -1309,8 +1428,8 @@ Can be immediately resolved using `_references`:
 
 ✅ **Key Takeaways**
 
-* Responses always have `Content-Type: application/json`.
-* `X-Api-Version` and `X-Request-Id` are generated by the **server**, not clients.
+* JsonDispatch envelope responses use `Content-Type: application/json; charset=utf-8`; file/stream responses use their native media type.
+* `X-Api-Version-Selected` and `X-Request-Id` are generated by the **server**, not clients.
 * The envelope is consistent — clients only need to check `status` and read `data`.
 
 
@@ -1324,9 +1443,13 @@ When a request is accepted but processing is deferred, return **`202 Accepted`**
 
 **Request:**
 
+**Request**
+
 ```http
 POST /api/v1/reports/quarterly
-Content-Type: application/vnd.infocyph.jd.v1+json
+Accept: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
 Authorization: Bearer eyJhbGci...
 
 {
@@ -1338,10 +1461,12 @@ Authorization: Bearer eyJhbGci...
 
 **Response:**
 
+**Response**
+
 ```http
 HTTP/1.1 202 Accepted
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 8f3d4e2a-9b1c-4f5e-8a7d-2c3b4d5e6f7a
 Location: https://api.example.com/api/v1/jobs/job_7x9Kp2Qm
 ```
@@ -1384,18 +1509,23 @@ Clients poll the job status URL to check progress:
 
 **Request:**
 
+**Request**
+
 ```http
 GET /api/v1/jobs/job_7x9Kp2Qm
-Accept: application/json
+Accept: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
 Authorization: Bearer eyJhbGci...
 ```
 
 **Response (processing):**
 
+**Response**
+
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e
 ```
 
@@ -1421,10 +1551,12 @@ X-Request-Id: 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e
 
 **Response (completed):**
 
+**Response**
+
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 3c4d5e6f-7a8b-4c9d-0e1f-2a3b4c5d6e7f
 ```
 
@@ -1464,9 +1596,13 @@ For better efficiency, clients can register webhooks instead of polling:
 
 **Job creation with webhook:**
 
+**Request**
+
 ```http
 POST /api/v1/reports/quarterly
-Content-Type: application/vnd.infocyph.jd.v1+json
+Accept: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
 
 {
   "year": 2025,
@@ -1477,9 +1613,11 @@ Content-Type: application/vnd.infocyph.jd.v1+json
 
 **Webhook payload (on completion):**
 
+**Request**
+
 ```http
 POST /webhooks/reports
-Content-Type: application/json
+Content-Type: application/json; charset=utf-8
 X-Webhook-Signature: sha256=2f5a1b8c...
 X-Request-Id: 4d5e6f7a-8b9c-4d0e-1f2a-3b4c5d6e7f8a
 
@@ -1501,10 +1639,12 @@ X-Request-Id: 4d5e6f7a-8b9c-4d0e-1f2a-3b4c5d6e7f8a
 
 When a job fails, the status endpoint returns the failure details:
 
+**Response**
+
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 5e6f7a8b-9c0d-4e1f-2a3b-4c5d6e7f8a9b
 ```
 
@@ -1542,9 +1682,13 @@ For operations where some items succeed and others fail, use **`207 Multi-Status
 
 **Request:**
 
+**Request**
+
 ```http
 POST /api/v1/users/bulk
-Content-Type: application/vnd.infocyph.jd.v1+json
+Accept: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
 
 {
   "users": [
@@ -1558,10 +1702,12 @@ Content-Type: application/vnd.infocyph.jd.v1+json
 
 **Response:**
 
+**Response**
+
 ```http
 HTTP/1.1 207 Multi-Status
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 6f7a8b9c-0d1e-4f2a-3b4c-5d6e7f8a9b0c
 ```
 
@@ -1637,10 +1783,12 @@ X-Request-Id: 6f7a8b9c-0d1e-4f2a-3b4c-5d6e7f8a9b0c
 
 If the operation is transactional and any failure should rollback all changes, return standard error responses:
 
+**Response**
+
 ```http
 HTTP/1.1 400 Bad Request
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 7a8b9c0d-1e2f-4a3b-4c5d-6e7f8a9b0c1d
 ```
 
@@ -1713,7 +1861,7 @@ JsonDispatch enforces a clean, uniform structure for **client-side issues** (`fa
 
 | Type        | Cause                                       | Who Fixes It   | Typical HTTP Status | Example                                 |
 |-------------|---------------------------------------------|----------------|---------------------|-----------------------------------------|
-| **`fail`**  | The client sent something invalid           | The **client** | 400 – 422           | Missing required fields, invalid format |
+| **`fail`**  | The client sent something invalid           | The **client** | 400 – 429 (plus 406/410/415 for negotiation/versioning) | Missing required fields, invalid format |
 | **`error`** | The server or an external dependency failed | The **server** | 500 – 504           | Timeout, DB crash, network outage       |
 
 Think of it like this:
@@ -1740,10 +1888,12 @@ Each describes one issue in a standard format:
 
 #### Example – Client Validation (`fail`)
 
+**Response**
+
 ```http
 HTTP/1.1 422 Unprocessable Entity
-Content-Type: application/json
-X-Api-Version: 1.3.1
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.3.1
 X-Request-Id: 9d2e7f6a-2f3b-45b0-9ff2-dc3d99991234
 ```
 
@@ -1770,10 +1920,12 @@ X-Request-Id: 9d2e7f6a-2f3b-45b0-9ff2-dc3d99991234
 
 #### Example – Server Outage (`error`)
 
+**Response**
+
 ```http
 HTTP/1.1 503 Service Unavailable
-Content-Type: application/json
-X-Api-Version: 1.3.1
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.3.1
 X-Request-Id: e13a97b3-5a2d-46db-a3b2-f401239b0cba
 ```
 
@@ -1910,10 +2062,14 @@ It’s ideal for client logic, dashboards and automation.
 |-----------------------------------------|----------|-----------------|
 | Read / List / Create / Update Success   | success  | 200 / 201 / 204 |
 | Validation error / bad input            | fail     | 400 / 422       |
+| Version header missing / malformed      | fail     | 400             |
+| Unsupported `Accept` media type (JSON endpoint) | fail | 406       |
 | Authentication required or failed       | fail     | 401             |
 | Forbidden (no permission)               | fail     | 403             |
 | Not found                               | fail     | 404             |
 | Conflict (duplicate / version mismatch) | fail     | 409             |
+| Requested version retired (past sunset) | fail     | 410             |
+| Unsupported request `Content-Type` for JSON body | fail | 415      |
 | Server exception / crash                | error    | 500             |
 | Bad gateway (upstream failure)          | error    | 502             |
 | Service unavailable / maintenance       | error    | 503             |
@@ -2478,11 +2634,20 @@ This approach ensures:
 
 When a breaking change becomes necessary:
 
-1. Increment the **major version** in the response’s `Content-Type`.
+1. Increment the **major version** in the request `Accept` media type.
+
+   **Request**
 
    ```http
-   Content-Type: application/vnd.infocyph.jd.v2+json
    X-Api-Version: 2.0.0
+   Accept: application/vnd.infocyph.jd.v2+json
+   ```
+
+   **Response**
+
+   ```http
+   HTTP/1.1 200 OK
+   X-Api-Version-Selected: 2.0.0
    ```
 
 2. Maintain the old major version (v1) in production for a transition period.
@@ -2501,6 +2666,15 @@ When a breaking change becomes necessary:
 | 3    | Announce upcoming version   | Changelog + docs                   |
 | 4    | Introduce new major version | `v2` media type                    |
 | 5    | Sunset old version          | Remove after clients migrate       |
+
+### 9.4 Version Lifecycle Enforcement
+
+To keep version transitions predictable, define and publish a support window for each served major version.
+
+* A new major version release **SHOULD** keep the previous major available for a documented transition period (recommended minimum: 24 months).
+* During that transition period, responses from the older major **SHOULD** include both `Deprecation` (HTTP-date or `true` when date-only policy is not used) and `Sunset` (RFC 8594 HTTP-date when that major will be retired).
+* After the sunset date, requests targeting the retired version **MUST** return `410 Gone`.
+* `410 Gone` responses **SHOULD** include actionable migration details (supported versions and documentation links).
 
 ---
 
@@ -2572,23 +2746,25 @@ Below is the **recommended lifecycle** for any field, structure or endpoint chan
 
 ### 10.3 Response Media Types & Fallbacks
 
-Clients are not required to send vendor-specific `Accept` headers.
+Clients should send vendor-specific `Accept` headers on JsonDispatch JSON endpoints.
 Your server defines the media type in responses:
 
 | Header            | Example                               | Description                             |
 |-------------------|---------------------------------------|-----------------------------------------|
-| **Content-Type**  | `application/vnd.infocyph.jd.v1+json` | Defines the JsonDispatch version in use |
-| **X-Api-Version** | `1.3.2`                               | Full semantic version of implementation |
+| **Content-Type**  | `application/json; charset=utf-8`      | Media type of the response payload (use native types for file/stream responses) |
+| **X-Api-Version-Selected** | `1.3.2`                               | Full semantic version of implementation |
 
 If a client requests plain JSON (`Accept: application/json`), return the **default stable major version** — but still
 include the correct headers for transparency.
 
 #### Example
 
+**Response**
+
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/vnd.infocyph.jd.v1+json
-X-Api-Version: 1.3.2
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.3.2
 X-Request-Id: b3e9e7c4-9b7b-44c3-a8f3-8c39e612d882
 ```
 
@@ -2619,18 +2795,20 @@ If your API is accessed from browsers, define **explicit and minimal** CORS poli
 
 **Recommended Example**
 
+**Response**
+
 ```http
 Access-Control-Allow-Origin: https://app.example.com
 Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
-Access-Control-Allow-Headers: Content-Type, X-Request-Id, X-Correlation-Id, Authorization
-Access-Control-Expose-Headers: X-Request-Id, X-Api-Version, X-Correlation-Id
+Access-Control-Allow-Headers: Content-Type, X-Api-Version, X-Request-Id, X-Correlation-Id, Authorization
+Access-Control-Expose-Headers: X-Request-Id, X-Api-Version-Selected, X-Correlation-Id
 Access-Control-Max-Age: 600
 ```
 
 ✅ Key points:
 
 * Always **whitelist origins**, never use `*` for authenticated APIs.
-* **Expose** `X-Request-Id`, `X-Api-Version` and `X-Correlation-Id` so browser-based clients can log and correlate them.
+* **Expose** `X-Request-Id`, `X-Api-Version-Selected` and `X-Correlation-Id` so browser-based clients can log and correlate them.
 * Cache preflight (`OPTIONS`) responses to reduce latency.
 
 #### 10.4.3 Authentication & Error Safety
@@ -2781,15 +2959,20 @@ This ensures monitoring tools receive a consistent, parsable format.
 
 **Example**
 
+**Request**
+
 ```http
 GET /health
-Accept: application/json
+Accept: application/vnd.infocyph.jd.v1+json
+X-Api-Version: 1.4.0
 ```
+
+**Response**
 
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/json
-X-Api-Version: 1.4.0
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.4.0
 X-Request-Id: 44f0d7e2-c9b2-4a61-9b2a-1cf41b922021
 ```
 
@@ -2902,8 +3085,8 @@ They should **never** be redefined for other purposes.
 
 | Header                           | Direction | Required | Description                                                                           |
 |----------------------------------|-----------|----------|---------------------------------------------------------------------------------------|
-| **`Content-Type`**               | Response  | ✅        | Defines the JsonDispatch response format (e.g. `application/vnd.infocyph.jd.v1+json`) |
-| **`X-Api-Version`**              | Response  | ✅        | Full semantic version of the server’s JsonDispatch implementation                     |
+| **`Content-Type`**               | Response  | ✅        | Media type of the response payload (`application/json; charset=utf-8` for JsonDispatch envelopes; native media types for files/streams) |
+| **`X-Api-Version-Selected`**              | Response  | ✅        | Full semantic version of the server’s JsonDispatch implementation                     |
 | **`X-Request-Id`**               | Response  | ✅        | Unique identifier generated by the server for this specific request/response          |
 | **`X-Correlation-Id`**           | Response  | ⚪        | Optional; groups multiple related requests under one workflow                         |
 | **`X-RateLimit-Limit`**          | Response  | ⚪        | Optional; maximum requests allowed in the current window                              |
@@ -2919,19 +3102,24 @@ They should **never** be redefined for other purposes.
 | **`WWW-Authenticate`**           | Response  | ⚪        | Optional; authentication scheme for 401 responses                                     |
 | **`traceparent` / `tracestate`** | Response  | ⚪        | Optional; W3C Trace Context headers if distributed tracing is enabled                 |
 
-> ⚠️ Clients **should not** send `X-Request-Id` or `X-Api-Version` —
+> ⚠️ Clients **should** send `X-Api-Version` to declare the desired API version.
+> Clients **should not** send `X-Request-Id` or `X-Api-Version-Selected` —
 > these are server-assigned identifiers for traceability and audit purposes.
 
 #### Example (Response Headers)
 
+**Response**
+
 ```http
-Content-Type: application/vnd.infocyph.jd.v1+json
-X-Api-Version: 1.3.1
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.3.1
 X-Request-Id: aabbccdd-1122-3344-5566-77889900aabb
 X-Correlation-Id: order-2025-09-30-777
 ```
 
 If you also use [W3C Trace Context](https://www.w3.org/TR/trace-context/):
+
+**Response**
 
 ```http
 traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
@@ -2962,7 +3150,7 @@ Here’s what a typical implementation might include:
 
 **Middleware responsibilities**
 
-* Attach `Content-Type` and `X-Api-Version`.
+* Attach `Content-Type` and `X-Api-Version-Selected`.
 * Generate `X-Request-Id` for each request.
 * Optionally include `X-Correlation-Id` if workflow-aware.
 * Enrich logs and tracing context automatically.
@@ -3036,16 +3224,19 @@ This schema validates:
 **Basic request (client → server):**
 
 ```bash
-curl -H 'Accept: application/json' \
+curl -H 'Accept: application/vnd.infocyph.jd.v1+json' \
+  -H 'X-Api-Version: 1.3.1' \
   https://api.example.com/articles/42
 ```
 
 **Server response (JsonDispatch-compliant):**
 
+**Response**
+
 ```http
 HTTP/1.1 200 OK
-Content-Type: application/vnd.infocyph.jd.v1+json
-X-Api-Version: 1.3.1
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.3.1
 X-Request-Id: 60c1bbca-b1c8-49d0-b3ea-fe41d23290bd
 ```
 
@@ -3065,17 +3256,20 @@ X-Request-Id: 60c1bbca-b1c8-49d0-b3ea-fe41d23290bd
 **Request with correlation (for multi-step workflows):**
 
 ```bash
-curl -H 'Accept: application/json' \
+curl -H 'Accept: application/vnd.infocyph.jd.v1+json' \
+  -H 'X-Api-Version: 1.3.1' \
   -H 'X-Correlation-Id: order-2025-10-05-xyz' \
   https://api.example.com/checkout
 ```
 
 **Server response:**
 
+**Response**
+
 ```http
 HTTP/1.1 201 Created
-Content-Type: application/vnd.infocyph.jd.v1+json
-X-Api-Version: 1.3.1
+Content-Type: application/json; charset=utf-8
+X-Api-Version-Selected: 1.3.1
 X-Request-Id: 8d4e2a1b-c821-4b97-8430-44c7b9651d79
 X-Correlation-Id: order-2025-10-05-xyz
 ```
@@ -3098,8 +3292,22 @@ X-Correlation-Id: order-2025-10-05-xyz
 * The server is the **only authority** for JsonDispatch headers.
   Clients may provide `X-Correlation-Id` (optional), but never `X-Request-Id`.
 
-* `Content-Type` defines the **envelope version** (`application/vnd.infocyph.jd.v1+json`).
+* Clients should send `X-Api-Version` on requests; the server responds with `X-Api-Version-Selected`.
 
-* Always include `X-Api-Version` in responses — even for errors.
+* For JsonDispatch envelope responses, use `Content-Type: application/json; charset=utf-8` (vendor media type on responses is optional).
+
+* Always include `X-Api-Version-Selected` in responses — even for errors.
 
 * JsonDispatch responses remain **valid JSON** even for plain `application/json` clients.
+
+### 11.7 Response Body Conventions
+
+To keep payloads portable across SDKs and languages, use these conventions consistently:
+
+| Convention | Recommendation |
+|---|---|
+| Timestamp fields | Use UTC with ISO 8601 / RFC 3339 format (example: `2026-05-13T09:45:00Z`). |
+| Nullable fields | Use explicit `null` only when the field is still part of the contract; omit fields only when optional and undocumented as always-present. |
+| Numeric identifiers | Keep identifier types stable across versions (don’t switch `id` between integer and string). |
+| Boolean semantics | Use `true`/`false` only for binary state; avoid encoding booleans as `0/1` or `"yes"/"no"`. |
+| Error detail objects | Keep `field`, `code` and `message` stable so clients can automate retries and UX messaging. |

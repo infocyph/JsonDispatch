@@ -44,12 +44,21 @@ This approach ensures:
 
 When a breaking change becomes necessary:
 
-1. Increment the **major version** in the response’s ``Content-Type``.
+1. Increment the **major version** in the request ``Accept`` media type.
+
+   **Request**
 
    .. code-block:: http
 
-      Content-Type: application/vnd.infocyph.jd.v2+json
       X-Api-Version: 2.0.0
+      Accept: application/vnd.infocyph.jd.v2+json
+
+   **Response**
+
+   .. code-block:: http
+
+      HTTP/1.1 200 OK
+      X-Api-Version-Selected: 2.0.0
 
 2. Maintain the old major version (v1) in production for a transition period. Deprecate it gradually using
    communication and version headers.
@@ -82,3 +91,19 @@ When a breaking change becomes necessary:
    * - 5
      - Sunset old version
      - Remove after clients migrate
+
+
+9.4 Version Lifecycle Enforcement
+---------------------------------
+
+To keep version transitions predictable, define and publish a support window for each served major version.
+
+- A new major version release **SHOULD** keep the previous major available for a documented transition period
+  (recommended minimum: 24 months).
+- During that transition period, responses from the older major **SHOULD** include:
+
+  - ``Deprecation`` (HTTP-date or ``true`` when date-only policy is not used)
+  - ``Sunset`` (RFC 8594 HTTP-date when that major will be retired)
+
+- After the sunset date, requests targeting the retired version **MUST** return ``410 Gone``.
+- ``410 Gone`` responses **SHOULD** include actionable migration details (supported versions and documentation links).

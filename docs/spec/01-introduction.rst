@@ -48,5 +48,6 @@ The server **must** generate and return a unique ``X-Request-Id`` on every respo
 
 **Versioned but predictable**
 
-- The response carries ``X-Api-Version`` (full SemVer) — clients can log and reason about the exact server implementation.
-- ``Accept`` stays ``application/json`` — clients don't need custom accept negotiation to consume JsonDispatch.
+- Requests send ``X-Api-Version`` (full SemVer) to declare the desired API version.
+- The response carries ``X-Api-Version-Selected`` (full SemVer) to confirm the version actually served.
+- ``Accept`` uses the JsonDispatch vendor media type (e.g., ``application/vnd.infocyph.jd.v1+json``) on JSON endpoints.
