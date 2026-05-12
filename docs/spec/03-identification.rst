@@ -22,16 +22,19 @@ Clients do **not** send this header.
 Client → Server::
 
   GET /articles
-  Accept: application/json
+  Accept: application/vnd.infocyph.jd.v1+json
+  X-Api-Version: 1.4.0
 
 Server → Client
 ~~~~~~~~~~~~~~~
 
+**Response**
+
 .. code-block:: http
 
    HTTP/1.1 200 OK
-   Content-Type: application/json
-   X-Api-Version: 1.4.0
+   Content-Type: application/json; charset=utf-8
+   X-Api-Version-Selected: 1.4.0
    X-Request-Id: 7e0e7b45-1e89-4a7f-bbd3-f7ac73fae951
 
 .. tip::
@@ -57,7 +60,9 @@ a shared **correlation ID** links them together.
 Client → Server::
 
   POST /checkout
-  Content-Type: application/vnd.infocyph.jd.v1+json
+  X-Api-Version: 1.4.0
+  Accept: application/vnd.infocyph.jd.v1+json
+  Content-Type: application/json; charset=utf-8
   X-Correlation-Id: order-2025-10-05-777
 
   { "cartId": "C10045" }
@@ -65,11 +70,13 @@ Client → Server::
 Server → Client
 ~~~~~~~~~~~~~~~
 
+**Response**
+
 .. code-block:: http
 
    HTTP/1.1 201 Created
-   Content-Type: application/json
-   X-Api-Version: 1.4.0
+   Content-Type: application/json; charset=utf-8
+   X-Api-Version-Selected: 1.4.0
    X-Request-Id: 019fb440-4e83-4b1b-bef9-44a80771f181
    X-Correlation-Id: order-2025-10-05-777
 
@@ -89,21 +96,26 @@ These headers complement (not replace) JsonDispatch identifiers:
 
 **Example**
 
+**Request**
+
 .. code-block:: http
 
    GET /profile
-   Accept: application/json
+   Accept: application/vnd.infocyph.jd.v1+json
+   X-Api-Version: 1.4.0
    traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
    tracestate: congo=t61rcWkgMzE
 
 Response
 ~~~~~~~~
 
+**Response**
+
 .. code-block:: http
 
    HTTP/1.1 200 OK
-   Content-Type: application/json
-   X-Api-Version: 1.4.0
+   Content-Type: application/json; charset=utf-8
+   X-Api-Version-Selected: 1.4.0
    X-Request-Id: 1b0c9d4b-eaa2-40d0-8715-fc93e6fefb99
    X-Correlation-Id: session-998877
    traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
@@ -128,6 +140,10 @@ Response
      - Link related requests in a workflow
      - ⚪ Optional
    * - ``X-Api-Version``
+     - Request →
+     - Requested JsonDispatch API version
+     - ✅ Yes
+   * - ``X-Api-Version-Selected``
      - Response →
      - Server JsonDispatch version identifier
      - ✅ Yes
@@ -176,11 +192,13 @@ Include these headers in **all successful responses** (and optionally in error r
 
 **Example response with rate limit headers**
 
+**Response**
+
 .. code-block:: http
 
    HTTP/1.1 200 OK
-   Content-Type: application/json
-   X-Api-Version: 1.4.0
+   Content-Type: application/json; charset=utf-8
+   X-Api-Version-Selected: 1.4.0
    X-Request-Id: 9b7f3c2a-4e1d-4f8c-a3b2-1e5d6c8f9a0b
    X-RateLimit-Limit: 1000
    X-RateLimit-Remaining: 987
@@ -213,11 +231,13 @@ JsonDispatch also supports the `IETF RateLimit Header Fields draft
 
 **Example response with IETF Draft headers**
 
+**Response**
+
 .. code-block:: http
 
    HTTP/1.1 200 OK
-   Content-Type: application/json
-   X-Api-Version: 1.4.0
+   Content-Type: application/json; charset=utf-8
+   X-Api-Version-Selected: 1.4.0
    X-Request-Id: 9b7f3c2a-4e1d-4f8c-a3b2-1e5d6c8f9a0b
    RateLimit-Limit: 1000
    RateLimit-Remaining: 987
@@ -239,11 +259,13 @@ JsonDispatch also supports the `IETF RateLimit Header Fields draft
 
 For maximum compatibility, you may send both header styles:
 
+**Response**
+
 .. code-block:: http
 
    HTTP/1.1 200 OK
-   Content-Type: application/json
-   X-Api-Version: 1.4.0
+   Content-Type: application/json; charset=utf-8
+   X-Api-Version-Selected: 1.4.0
    X-Request-Id: 9b7f3c2a-4e1d-4f8c-a3b2-1e5d6c8f9a0b
    X-RateLimit-Limit: 1000
    X-RateLimit-Remaining: 987
@@ -264,11 +286,13 @@ For maximum compatibility, you may send both header styles:
 
 When a client exceeds their rate limit, return **``429 Too Many Requests``** with a ``fail`` status:
 
+**Response**
+
 .. code-block:: http
 
    HTTP/1.1 429 Too Many Requests
-   Content-Type: application/json
-   X-Api-Version: 1.4.0
+   Content-Type: application/json; charset=utf-8
+   X-Api-Version-Selected: 1.4.0
    X-Request-Id: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
    X-RateLimit-Limit: 1000
    X-RateLimit-Remaining: 0

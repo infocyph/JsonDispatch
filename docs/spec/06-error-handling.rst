@@ -20,7 +20,7 @@ JsonDispatch enforces a clean, uniform structure for **client-side issues** (``f
    * - **``fail``**
      - The client sent something invalid
      - The **client**
-     - 400–422
+     - 400–429 (plus 406/410/415 for negotiation/versioning)
      - Missing required fields, invalid format
    * - **``error``**
      - The server or an external dependency failed
@@ -66,11 +66,13 @@ Both ``fail`` and ``error`` responses contain an **array of objects** under ``da
 
 **Example – Client Validation (``fail``)**
 
+**Response**
+
 .. code-block:: http
 
    HTTP/1.1 422 Unprocessable Entity
-   Content-Type: application/json
-   X-Api-Version: 1.3.1
+   Content-Type: application/json; charset=utf-8
+   X-Api-Version-Selected: 1.3.1
    X-Request-Id: 9d2e7f6a-2f3b-45b0-9ff2-dc3d99991234
 
 .. code-block:: json
@@ -96,11 +98,13 @@ Both ``fail`` and ``error`` responses contain an **array of objects** under ``da
 
 **Example – Server Outage (``error``)**
 
+**Response**
+
 .. code-block:: http
 
    HTTP/1.1 503 Service Unavailable
-   Content-Type: application/json
-   X-Api-Version: 1.3.1
+   Content-Type: application/json; charset=utf-8
+   X-Api-Version-Selected: 1.3.1
    X-Request-Id: e13a97b3-5a2d-46db-a3b2-f401239b0cba
 
 .. code-block:: json
@@ -259,6 +263,12 @@ The optional top-level ``code`` field adds a **business-level meaning** beyond t
    * - Validation error / bad input
      - fail
      - 400 / 422
+   * - Version header missing / malformed
+     - fail
+     - 400
+   * - Unsupported ``Accept`` media type (JSON endpoint)
+     - fail
+     - 406
    * - Authentication required or failed
      - fail
      - 401
@@ -271,6 +281,12 @@ The optional top-level ``code`` field adds a **business-level meaning** beyond t
    * - Conflict (duplicate / version mismatch)
      - fail
      - 409
+   * - Requested version retired (past sunset)
+     - fail
+     - 410
+   * - Unsupported request ``Content-Type`` for JSON body
+     - fail
+     - 415
    * - Server exception / crash
      - error
      - 500

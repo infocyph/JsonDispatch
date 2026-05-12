@@ -106,7 +106,7 @@ Below is the **recommended lifecycle** for any field, structure or endpoint chan
 10.3 Response Media Types & Fallbacks
 -------------------------------------
 
-Clients are not required to send vendor-specific ``Accept`` headers.
+Clients should send vendor-specific ``Accept`` headers on JsonDispatch JSON endpoints.
 Your server defines the media type in responses:
 
 .. list-table::
@@ -117,9 +117,9 @@ Your server defines the media type in responses:
      - Example
      - Description
    * - **Content-Type**
-     - ``application/vnd.infocyph.jd.v1+json``
-     - Defines the JsonDispatch version in use
-   * - **X-Api-Version**
+     - ``application/json; charset=utf-8``
+     - Media type of the response payload (use native types for file/stream responses)
+   * - **X-Api-Version-Selected**
      - ``1.3.2``
      - Full semantic version of implementation
 
@@ -128,11 +128,13 @@ include the correct headers for transparency.
 
 **Example**
 
+**Response**
+
 .. code-block:: http
 
    HTTP/1.1 200 OK
-   Content-Type: application/vnd.infocyph.jd.v1+json
-   X-Api-Version: 1.3.2
+   Content-Type: application/json; charset=utf-8
+   X-Api-Version-Selected: 1.3.2
    X-Request-Id: b3e9e7c4-9b7b-44c3-a8f3-8c39e612d882
 
 
@@ -186,18 +188,20 @@ If your API is accessed from browsers, define **explicit and minimal** CORS poli
 
 **Recommended Example**
 
+**Response**
+
 .. code-block:: http
 
    Access-Control-Allow-Origin: https://app.example.com
    Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
-   Access-Control-Allow-Headers: Content-Type, X-Request-Id, X-Correlation-Id, Authorization
-   Access-Control-Expose-Headers: X-Request-Id, X-Api-Version, X-Correlation-Id
+   Access-Control-Allow-Headers: Content-Type, X-Api-Version, X-Request-Id, X-Correlation-Id, Authorization
+   Access-Control-Expose-Headers: X-Request-Id, X-Api-Version-Selected, X-Correlation-Id
    Access-Control-Max-Age: 600
 
 Key points:
 
 - Always **whitelist origins**, never use ``*`` for authenticated APIs.
-- **Expose** ``X-Request-Id``, ``X-Api-Version`` and ``X-Correlation-Id`` so browser-based clients can log and correlate them.
+- **Expose** ``X-Request-Id``, ``X-Api-Version-Selected`` and ``X-Correlation-Id`` so browser-based clients can log and correlate them.
 - Cache preflight (``OPTIONS``) responses to reduce latency.
 
 10.4.3 Authentication & Error Safety
@@ -400,16 +404,21 @@ Expose ``/health`` and ``/ready`` endpoints using the JsonDispatch envelope.
 
 **Example**
 
+**Request**
+
 .. code-block:: http
 
    GET /health
-   Accept: application/json
+   Accept: application/vnd.infocyph.jd.v1+json
+   X-Api-Version: 1.4.0
+
+**Response**
 
 .. code-block:: http
 
    HTTP/1.1 200 OK
-   Content-Type: application/json
-   X-Api-Version: 1.4.0
+   Content-Type: application/json; charset=utf-8
+   X-Api-Version-Selected: 1.4.0
    X-Request-Id: 44f0d7e2-c9b2-4a61-9b2a-1cf41b922021
 
 .. code-block:: json

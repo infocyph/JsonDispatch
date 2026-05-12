@@ -25,8 +25,8 @@ They should **never** be redefined for other purposes.
    * - **Content-Type**
      - Response
      - ✅
-     - Defines the JsonDispatch response format (e.g. ``application/vnd.infocyph.jd.v1+json``)
-   * - **X-Api-Version**
+     - Media type of the response payload (``application/json; charset=utf-8`` for JsonDispatch envelopes; native media types for files/streams)
+   * - **X-Api-Version-Selected**
      - Response
      - ✅
      - Full semantic version of the server’s JsonDispatch implementation
@@ -88,19 +88,24 @@ They should **never** be redefined for other purposes.
      - Optional; W3C Trace Context headers if distributed tracing is enabled
 
 .. important::
-   Clients **should not** send ``X-Request-Id`` or ``X-Api-Version`` — these are server-assigned identifiers for
-   traceability and audit purposes.
+   Clients **should** send ``X-Api-Version`` to declare the desired API version.
+   Clients **should not** send ``X-Request-Id`` or ``X-Api-Version-Selected`` — these are server-assigned identifiers
+   for traceability and audit purposes.
 
 **Example (Response Headers)**
 
+**Response**
+
 .. code-block:: http
 
-   Content-Type: application/vnd.infocyph.jd.v1+json
-   X-Api-Version: 1.3.1
+   Content-Type: application/json; charset=utf-8
+   X-Api-Version-Selected: 1.3.1
    X-Request-Id: aabbccdd-1122-3344-5566-77889900aabb
    X-Correlation-Id: order-2025-09-30-777
 
 If you also use `W3C Trace Context <https://www.w3.org/TR/trace-context/>`_:
+
+**Response**
 
 .. code-block:: http
 
@@ -148,7 +153,7 @@ Here’s what a typical implementation might include:
 
 **Middleware responsibilities**
 
-- Attach ``Content-Type`` and ``X-Api-Version``.
+- Attach ``Content-Type`` and ``X-Api-Version-Selected``.
 - Generate ``X-Request-Id`` for each request.
 - Optionally include ``X-Correlation-Id`` if workflow-aware.
 - Enrich logs and tracing context automatically.
@@ -212,16 +217,19 @@ This schema validates:
 
 .. code-block:: bash
 
-   curl -H 'Accept: application/json' \
+   curl -H 'Accept: application/vnd.infocyph.jd.v1+json' \
+     -H 'X-Api-Version: 1.3.1' \
      https://api.example.com/articles/42
 
 **Server response (JsonDispatch-compliant)**
 
+**Response**
+
 .. code-block:: http
 
    HTTP/1.1 200 OK
-   Content-Type: application/vnd.infocyph.jd.v1+json
-   X-Api-Version: 1.3.1
+   Content-Type: application/json; charset=utf-8
+   X-Api-Version-Selected: 1.3.1
    X-Request-Id: 60c1bbca-b1c8-49d0-b3ea-fe41d23290bd
 
 **Body**
@@ -241,17 +249,20 @@ This schema validates:
 
 .. code-block:: bash
 
-   curl -H 'Accept: application/json' \
+   curl -H 'Accept: application/vnd.infocyph.jd.v1+json' \
+     -H 'X-Api-Version: 1.3.1' \
      -H 'X-Correlation-Id: order-2025-10-05-xyz' \
      https://api.example.com/checkout
 
 **Server response**
 
+**Response**
+
 .. code-block:: http
 
    HTTP/1.1 201 Created
-   Content-Type: application/vnd.infocyph.jd.v1+json
-   X-Api-Version: 1.3.1
+   Content-Type: application/json; charset=utf-8
+   X-Api-Version-Selected: 1.3.1
    X-Request-Id: 8d4e2a1b-c821-4b97-8430-44c7b9651d79
    X-Correlation-Id: order-2025-10-05-xyz
 
@@ -274,6 +285,30 @@ This schema validates:
 
 - The server is the **only authority** for JsonDispatch headers.
   Clients may provide ``X-Correlation-Id`` (optional), but never ``X-Request-Id``.
-- ``Content-Type`` defines the **envelope version** (``application/vnd.infocyph.jd.v1+json``).
-- Always include ``X-Api-Version`` in responses — even for errors.
+- Clients should send ``X-Api-Version`` on requests; the server responds with ``X-Api-Version-Selected``.
+- For JsonDispatch envelope responses, use ``Content-Type: application/json; charset=utf-8`` (vendor media type on responses is optional).
+- Always include ``X-Api-Version-Selected`` in responses — even for errors.
 - JsonDispatch responses remain **valid JSON** even for plain ``application/json`` clients.
+
+
+11.7 Response Body Conventions
+------------------------------
+
+To keep payloads portable across SDKs and languages, use these conventions consistently:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 34 66
+
+   * - Convention
+     - Recommendation
+   * - Timestamp fields
+     - Use UTC with ISO 8601 / RFC 3339 format (example: ``2026-05-13T09:45:00Z``).
+   * - Nullable fields
+     - Use explicit ``null`` only when the field is still part of the contract; omit fields only when optional and undocumented as always-present.
+   * - Numeric identifiers
+     - Keep identifier types stable across versions (don’t switch ``id`` between integer and string).
+   * - Boolean semantics
+     - Use ``true``/``false`` only for binary state; avoid encoding booleans as ``0/1`` or ``"yes"/"no"``.
+   * - Error detail objects
+     - Keep ``field``, ``code`` and ``message`` stable so clients can automate retries and UX messaging.
