@@ -26,6 +26,12 @@ under their Read the Docs version slug. Each copied artifact directory includes
 an ``index.html`` file because Read the Docs does not synthesize directory
 listings.
 
+Human-readable, syntax-highlighted copies are available in
+:doc:`the schema reference <../artifacts/schemas>` and
+:doc:`the fixture reference <../artifacts/fixtures>`. These pages include the
+raw JSON sources during the Sphinx build rather than maintaining duplicate
+examples.
+
 11.2 Version manifest
 ---------------------
 
