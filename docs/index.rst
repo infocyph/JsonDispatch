@@ -20,4 +20,10 @@ explicitly non-normative.
    spec/09-compatibility
    spec/10-best-practices
    spec/11-appendix
-   artifacts/index
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Reference
+
+   artifacts/schemas
+   artifacts/fixtures
