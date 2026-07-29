@@ -46,7 +46,18 @@ required ``Vary`` fields through reverse proxies and CDNs.
 Choose application-appropriate cache controls. JsonDispatch does not require
 all responses to be private or non-cacheable.
 
-10.5 Links and metadata
+10.5 Status tunneling
+---------------------
+
+Keep native HTTP status handling as the default and shortest execution path.
+Enable status tunneling only for deployments with a confirmed transport
+restriction, and configure it explicitly at the transport boundary.
+
+Dashboards, health checks, service-level indicators, retry logic, and alerting
+must extract the semantic status when tunneling is enabled. Otherwise an outage
+can be incorrectly reported as a stream of successful ``200`` responses.
+
+10.6 Links and metadata
 -----------------------
 
 Prefer a stable ``self`` relation for resource and collection responses. Treat
@@ -56,7 +67,7 @@ origin, scheme, and navigation policy.
 Keep reference maps and link metadata bounded. Large dictionaries, resource
 trees, and file catalogs are usually better represented as normal resources.
 
-10.6 Safe failures
+10.7 Safe failures
 ------------------
 
 Use stable issue codes and public-safe titles. Put only information a caller is
@@ -66,7 +77,7 @@ server-side telemetry associated with ``X-Request-Id``.
 Return multiple validation issues in deterministic order when doing so is
 useful. A fail-fast endpoint may return one issue and still conform.
 
-10.7 Conformance in delivery pipelines
+10.8 Conformance in delivery pipelines
 --------------------------------------
 
 Validate representative real responses, not only hand-written fixtures. Run

@@ -71,6 +71,11 @@ use canonical casing in fixtures so ordinary JSON Schema can validate them.
 Actual HTTP field names are case-insensitive, and ``Vary`` field order is not
 significant.
 
+Native fixture records put the actual semantic response status in
+``http_status``. Restricted-transport records use ``http_status: 200`` and
+carry the same semantic error status in both ``body.status_code`` and the
+``X-JD-Status-Code`` header.
+
 11.4 Positive and negative fixtures
 -----------------------------------
 
@@ -107,6 +112,8 @@ including:
 - media-range quality and precedence;
 - semantic-version compatibility selection;
 - uniqueness of request identifiers;
+- exact numeric equality among native HTTP status, ``body.status_code``, and
+  ``X-JD-Status-Code`` when the applicable values are present;
 - complete RFC 6901 escaping for source pointers and pointer patterns;
 - arithmetic relationships such as ``count <= limit``;
 - preservation of filter and sort query semantics in pagination links; and

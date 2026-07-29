@@ -72,3 +72,7 @@ their semantics.
      - Response
      - Served application API version
      - Yes
+   * - ``X-JD-Status-Code``
+     - Response
+     - Semantic status in restricted transport
+     - Tunneling only

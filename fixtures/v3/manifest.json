@@ -17,6 +17,16 @@
       "rule": "A 5xx response uses error with public-safe issues."
     },
     {
+      "path": "positive/tunneled-validation-fail.json",
+      "valid": true,
+      "rule": "A restricted transport carries a 4xx semantic status consistently in its fail envelope and X-JD-Status-Code header."
+    },
+    {
+      "path": "positive/tunneled-dependency-error.json",
+      "valid": true,
+      "rule": "A restricted transport carries a 5xx semantic status consistently and prevents storage of the tunneled error."
+    },
+    {
       "path": "positive/offset-pagination.json",
       "valid": true,
       "rule": "Offset pagination declares its window and self link."
@@ -55,6 +65,41 @@
       "path": "negative/http-envelope-status-mismatch.json",
       "valid": false,
       "rule": "HTTP and envelope status classes agree."
+    },
+    {
+      "path": "negative/tunnel-missing-body-status-code.json",
+      "valid": false,
+      "rule": "A tunneled failure requires body.status_code."
+    },
+    {
+      "path": "negative/tunnel-missing-status-header.json",
+      "valid": false,
+      "rule": "A tunneled error requires X-JD-Status-Code."
+    },
+    {
+      "path": "negative/tunnel-cacheable-error.json",
+      "valid": false,
+      "rule": "A tunneled failure or error requires Cache-Control to contain no-store."
+    },
+    {
+      "path": "negative/tunnel-header-class-mismatch.json",
+      "valid": false,
+      "rule": "X-JD-Status-Code and the envelope outcome use the same status class."
+    },
+    {
+      "path": "negative/status-code-class-mismatch.json",
+      "valid": false,
+      "rule": "The envelope status_code uses the range belonging to its outcome."
+    },
+    {
+      "path": "negative/tunnel-success.json",
+      "valid": false,
+      "rule": "A producer never tunnels a successful outcome."
+    },
+    {
+      "path": "negative/undeclared-error-on-200.json",
+      "valid": false,
+      "rule": "An error on an outer 200 requires all restricted-transport signals."
     },
     {
       "path": "negative/no-content-with-envelope.json",

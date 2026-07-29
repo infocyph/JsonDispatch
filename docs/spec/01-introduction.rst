@@ -23,6 +23,7 @@ This specification defines:
 - the JsonDispatch vendor media type and version negotiation;
 - response identification headers;
 - the JSON envelope and its status semantics;
+- the restricted-transport status profile;
 - machine-readable issue objects;
 - resource properties, references, and links;
 - offset and cursor pagination metadata; and
@@ -54,8 +55,9 @@ A **conforming envelope** satisfies the v3 envelope schema and every applicable
 normative rule in Chapters 4, 6, 7, and 8.
 
 A **conforming HTTP response** has a conforming envelope, satisfies the
-applicable status and header rules in Chapters 2 and 3, and uses an HTTP status
-consistent with the envelope status.
+applicable status and header rules in Chapters 2 through 4, and either uses a
+native HTTP status consistent with the envelope status or satisfies every
+restricted-transport requirement in Section 4.3.
 
 A **conforming implementation** emits only conforming HTTP responses when it
 selects a JsonDispatch representation. It MAY expose endpoints that return

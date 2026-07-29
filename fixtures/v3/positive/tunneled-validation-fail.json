@@ -1,0 +1,25 @@
+{
+  "http_status": 200,
+  "headers": {
+    "Content-Type": "application/vnd.infocyph.jd.v3+json; charset=utf-8",
+    "X-Api-Version-Selected": "1.4.2",
+    "X-Request-Id": "019fb440-4e83-7b1b-9ef9-44a80771f184",
+    "Vary": "Accept, X-Api-Version",
+    "X-JD-Status-Code": "422",
+    "Cache-Control": "no-store"
+  },
+  "body": {
+    "status": "fail",
+    "status_code": 422,
+    "message": "Validation failed",
+    "data": [
+      {
+        "code": "EMAIL_INVALID",
+        "title": "Email is invalid",
+        "source": {
+          "pointer": "/profile/email"
+        }
+      }
+    ]
+  }
+}

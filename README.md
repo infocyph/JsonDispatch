@@ -21,6 +21,12 @@ Every JsonDispatch response uses one of three outcomes:
 | `fail` | `4xx` | The request requires a client-side change. |
 | `error` | `5xx` | The producer or a dependency could not complete a valid request. |
 
+Native HTTP status is the default. For deployments that cannot emit `4xx` or
+`5xx`, the explicitly enabled restricted-transport profile uses an outer
+`200` plus matching `status_code` and `X-JD-Status-Code` values
+and `Cache-Control: no-store`. An undeclared error carried as `200` is not
+conforming.
+
 ```http
 HTTP/1.1 200 OK
 Content-Type: application/vnd.infocyph.jd.v3+json; charset=utf-8

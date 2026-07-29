@@ -15,6 +15,11 @@
         "error"
       ]
     },
+    "status_code": {
+      "type": "integer",
+      "minimum": 200,
+      "maximum": 599
+    },
     "message": {
       "type": "string",
       "minLength": 1
@@ -35,6 +40,10 @@
       "properties": {
         "status": {
           "const": "success"
+        },
+        "status_code": {
+          "minimum": 200,
+          "maximum": 299
         }
       },
       "required": [
@@ -45,6 +54,10 @@
       "properties": {
         "status": {
           "const": "fail"
+        },
+        "status_code": {
+          "minimum": 400,
+          "maximum": 499
         },
         "data": {
           "type": "array",
@@ -63,6 +76,10 @@
       "properties": {
         "status": {
           "const": "error"
+        },
+        "status_code": {
+          "minimum": 500,
+          "maximum": 599
         },
         "data": {
           "type": "array",

@@ -40,6 +40,15 @@ Validation failure
    :language: json
    :linenos:
 
+Restricted-transport error
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:download:`Download tunneled-dependency-error.json <../../fixtures/v3/positive/tunneled-dependency-error.json>`
+
+.. literalinclude:: ../../fixtures/v3/positive/tunneled-dependency-error.json
+   :language: json
+   :linenos:
+
 Representative negative fixture
 -------------------------------
 

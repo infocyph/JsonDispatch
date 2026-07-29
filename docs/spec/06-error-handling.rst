@@ -10,6 +10,10 @@ succeed. It is used with ``4xx`` HTTP statuses.
 ``error`` means the producer or one of its dependencies could not complete an
 otherwise valid request. It is used with ``5xx`` HTTP statuses.
 
+In the restricted-transport profile, these classifications use the semantic
+``status_code`` rather than the outer ``200``. Chapter 4 defines the required
+tunneling signals and agreement rules.
+
 Retryability is not implied by ``status`` alone. Applications use HTTP
 semantics such as ``Retry-After`` and documented issue codes to communicate
 retry behavior.

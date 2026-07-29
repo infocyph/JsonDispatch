@@ -1,0 +1,21 @@
+{
+  "http_status": 200,
+  "headers": {
+    "Content-Type": "application/vnd.infocyph.jd.v3+json; charset=utf-8",
+    "X-Api-Version-Selected": "1.4.2",
+    "X-Request-Id": "019fb440-4e83-7b1b-9ef9-44a80771f188",
+    "Vary": "Accept, X-Api-Version",
+    "X-JD-Status-Code": "503",
+    "Cache-Control": "private, max-age=60"
+  },
+  "body": {
+    "status": "error",
+    "status_code": 503,
+    "data": [
+      {
+        "code": "DEPENDENCY_UNAVAILABLE",
+        "title": "A required dependency did not respond"
+      }
+    ]
+  }
+}

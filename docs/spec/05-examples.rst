@@ -96,7 +96,37 @@
      ]
    }
 
-5.4 Offset pagination
+5.4 Restricted-transport error
+------------------------------
+
+This form is used only when the deployment cannot carry a native ``5xx``
+status and both producer and consumer have enabled status tunneling.
+
+.. code-block:: http
+
+   HTTP/1.1 200 OK
+   Content-Type: application/vnd.infocyph.jd.v3+json; charset=utf-8
+   X-Api-Version-Selected: 1.4.2
+   X-Request-Id: 019fb440-4e83-7b1b-9ef9-44a80771f184
+   Vary: Accept, X-Api-Version
+   X-JD-Status-Code: 503
+   Cache-Control: no-store
+
+.. code-block:: json
+
+   {
+     "status": "error",
+     "status_code": 503,
+     "message": "The service is temporarily unavailable",
+     "data": [
+       {
+         "code": "DEPENDENCY_UNAVAILABLE",
+         "title": "A required dependency did not respond"
+       }
+     ]
+   }
+
+5.5 Offset pagination
 ---------------------
 
 .. code-block:: json
@@ -129,7 +159,7 @@
      }
    }
 
-5.5 Cursor pagination
+5.6 Cursor pagination
 ---------------------
 
 .. code-block:: json
@@ -159,7 +189,7 @@
      }
    }
 
-5.6 References
+5.7 References
 --------------
 
 .. code-block:: json

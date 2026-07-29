@@ -72,6 +72,10 @@ claimed to conform to this specification.
 ``Vary`` MUST identify both ``Accept`` and ``X-Api-Version``. It MAY contain
 additional fields and field order is not significant.
 
+The restricted-transport profile defined in Section 4.3 additionally uses
+``X-JD-Status-Code`` and ``Cache-Control``. It does not alter media-type
+or application-version negotiation.
+
 2.4 Negotiation failures
 ------------------------
 

@@ -62,6 +62,13 @@
               "pattern": "(^|,\\s*)X-Api-Version(\\s*,|$)"
             }
           ]
+        },
+        "X-JD-Status-Code": {
+          "type": "string",
+          "pattern": "^[45][0-9]{2}$"
+        },
+        "Cache-Control": {
+          "type": "string"
         }
       },
       "additionalProperties": {
@@ -72,78 +79,170 @@
       "$ref": "envelope.schema.json"
     }
   },
-  "allOf": [
+  "oneOf": [
     {
-      "if": {
-        "properties": {
-          "http_status": {
-            "minimum": 200,
-            "maximum": 299
+      "allOf": [
+        {
+          "properties": {
+            "headers": {
+              "not": {
+                "required": [
+                  "X-JD-Status-Code"
+                ]
+              }
+            }
           }
         },
-        "required": [
-          "http_status"
-        ]
-      },
-      "then": {
-        "properties": {
-          "body": {
+        {
+          "if": {
             "properties": {
-              "status": {
-                "const": "success"
+              "http_status": {
+                "minimum": 200,
+                "maximum": 299
+              }
+            },
+            "required": [
+              "http_status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "body": {
+                "properties": {
+                  "status": {
+                    "const": "success"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "http_status": {
+                "minimum": 400,
+                "maximum": 499
+              }
+            },
+            "required": [
+              "http_status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "body": {
+                "properties": {
+                  "status": {
+                    "const": "fail"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "http_status": {
+                "minimum": 500,
+                "maximum": 599
+              }
+            },
+            "required": [
+              "http_status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "body": {
+                "properties": {
+                  "status": {
+                    "const": "error"
+                  }
+                }
               }
             }
           }
         }
-      }
+      ]
     },
     {
-      "if": {
-        "properties": {
-          "http_status": {
-            "minimum": 400,
-            "maximum": 499
-          }
+      "properties": {
+        "http_status": {
+          "const": 200
         },
-        "required": [
-          "http_status"
-        ]
-      },
-      "then": {
-        "properties": {
-          "body": {
-            "properties": {
-              "status": {
-                "const": "fail"
-              }
+        "headers": {
+          "required": [
+            "X-JD-Status-Code",
+            "Cache-Control"
+          ],
+          "properties": {
+            "Cache-Control": {
+              "pattern": "(^|,\\s*)no-store(\\s*,|$)"
             }
           }
         }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "http_status": {
-            "minimum": 500,
-            "maximum": 599
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "headers": {
+              "properties": {
+                "X-JD-Status-Code": {
+                  "pattern": "^4[0-9]{2}$"
+                }
+              }
+            },
+            "body": {
+              "properties": {
+                "status": {
+                  "const": "fail"
+                },
+                "status_code": {
+                  "minimum": 400,
+                  "maximum": 499
+                }
+              },
+              "required": [
+                "status",
+                "status_code"
+              ]
+            }
           }
         },
-        "required": [
-          "http_status"
-        ]
-      },
-      "then": {
-        "properties": {
-          "body": {
-            "properties": {
-              "status": {
-                "const": "error"
+        {
+          "properties": {
+            "headers": {
+              "properties": {
+                "X-JD-Status-Code": {
+                  "pattern": "^5[0-9]{2}$"
+                }
               }
+            },
+            "body": {
+              "properties": {
+                "status": {
+                  "const": "error"
+                },
+                "status_code": {
+                  "minimum": 500,
+                  "maximum": 599
+                }
+              },
+              "required": [
+                "status",
+                "status_code"
+              ]
             }
           }
         }
-      }
+      ],
+      "required": [
+        "http_status",
+        "headers",
+        "body"
+      ]
     }
   ]
 }
