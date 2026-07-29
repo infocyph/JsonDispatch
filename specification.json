@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "media_type_major": 3,
   "project": "https://docs.infocyph.com/projects/json-dispatch/",
-  "documentation": "https://docs.infocyph.com/projects/json-dispatch/en/3.0.0/",
+  "documentation": "https://docs.infocyph.com/projects/json-dispatch/",
   "schemas": {
     "envelope": "schemas/v3/envelope.schema.json",
     "http_response": "schemas/v3/http-response.schema.json"

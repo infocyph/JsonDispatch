@@ -8,19 +8,23 @@ The Read the Docs project origin is:
 
 ``https://docs.infocyph.com/projects/json-dispatch/``
 
-Read the Docs serves versioned builds at
-``/projects/json-dispatch/<language>/<version>/``. The immutable 3.0.0
-documentation root is:
+The project origin redirects to the active default build. Concrete artifacts
+from the current development build are available at:
 
-``https://docs.infocyph.com/projects/json-dispatch/en/3.0.0/``
+- `Envelope schema <https://docs.infocyph.com/projects/json-dispatch/en/latest/schemas/v3/envelope.schema.json>`_
+- `HTTP-response schema <https://docs.infocyph.com/projects/json-dispatch/en/latest/schemas/v3/http-response.schema.json>`_
+- `Fixture manifest <https://docs.infocyph.com/projects/json-dispatch/en/latest/fixtures/v3/manifest.json>`_
+- `Specification manifest <https://docs.infocyph.com/projects/json-dispatch/en/latest/specification.json>`_
 
-Published v3 schemas for that build are rooted at:
-
-``https://docs.infocyph.com/projects/json-dispatch/en/3.0.0/schemas/v3/``
+Read the Docs creates an immutable ``en/3.0.0`` build only after the ``3.0.0``
+version is tagged, activated, and successfully built. Until then, URLs beneath
+that version correctly return ``404`` and MUST NOT be advertised as published.
 
 The repository copies ``schemas`` and ``fixtures`` into the documentation
 artifact without transforming them. Development builds expose the same paths
-under their Read the Docs version slug, such as ``en/latest``.
+under their Read the Docs version slug. Each copied artifact directory includes
+an ``index.html`` file because Read the Docs does not synthesize directory
+listings.
 
 11.2 Version manifest
 ---------------------

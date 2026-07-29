@@ -1,53 +1,120 @@
 # JsonDispatch
 
-JsonDispatch is a language-neutral specification for JSON HTTP response
-envelopes. It defines response status semantics, representation negotiation,
-identification headers, error details, links, references, and offset/cursor
-pagination metadata.
+[![Specification checks](https://github.com/infocyph/JsonDispatch/actions/workflows/specification.yml/badge.svg)](https://github.com/infocyph/JsonDispatch/actions/workflows/specification.yml)
+[![Specification](https://img.shields.io/badge/specification-3.0.0-3154a5.svg)](specification.json)
 
-**Published documentation:**
+JsonDispatch is a language-neutral specification for predictable JSON HTTP
+responses. It standardizes outcome semantics, errors, representation
+negotiation, request identification, links, references, and offset or cursor
+pagination without prescribing an application framework or programming
+language.
 
-https://docs.infocyph.com/projects/json-dispatch/
+**[Read the published specification](https://docs.infocyph.com/projects/json-dispatch/)**
 
-The documentation is hosted by Read the Docs as a subproject. Versioned builds
-use
-``https://docs.infocyph.com/projects/json-dispatch/<language>/<version>/``;
-for example, the current development build is available under
-[/en/latest/](https://docs.infocyph.com/projects/json-dispatch/en/latest/).
+## Response contract
 
-The current normative specification is **JsonDispatch 3.0.0**. An
-application's API version is independent from the JsonDispatch specification
-version:
+Every JsonDispatch response uses one of three outcomes:
 
-- `application/vnd.<vendor>.jd.v3+json` selects JsonDispatch major version 3.
-- `X-Api-Version` requests an application API version.
-- `X-Api-Version-Selected` reports the application API version served.
+| Status | HTTP class | Meaning |
+| --- | --- | --- |
+| `success` | `2xx` | The operation completed successfully. |
+| `fail` | `4xx` | The request requires a client-side change. |
+| `error` | `5xx` | The producer or a dependency could not complete a valid request. |
 
-## Normative specification
+```http
+HTTP/1.1 200 OK
+Content-Type: application/vnd.infocyph.jd.v3+json; charset=utf-8
+X-Api-Version-Selected: 1.4.2
+X-Request-Id: 019fb440-4e83-7b1b-9ef9-44a80771f181
+Vary: Accept, X-Api-Version
+```
 
-The canonical rendered specification is published at the documentation URL
-above. Its source is maintained in [docs/spec](docs/spec). Start with:
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "article-42",
+    "title": "A predictable response contract"
+  },
+  "_links": {
+    "self": "https://api.example.com/articles/article-42"
+  }
+}
+```
 
-- [Conformance and terminology](docs/spec/01-introduction.rst)
-- [Media types and versioning](docs/spec/02-media-types-versioning.rst)
-- [Response envelope](docs/spec/04-envelope.rst)
-- [Errors](docs/spec/06-error-handling.rst)
-- [Conformance artifacts](docs/spec/11-appendix.rst)
+The complete envelope, failure, metadata, and pagination rules are defined by
+the normative specification and its versioned schemas.
 
-Versioned machine-readable artifacts are in [schemas/v3](schemas/v3).
-Positive and negative examples are in [fixtures/v3](fixtures/v3).
-Read the Docs publishes these unchanged at:
+## Versioning
 
-- https://docs.infocyph.com/projects/json-dispatch/en/3.0.0/schemas/v3/
-- https://docs.infocyph.com/projects/json-dispatch/en/3.0.0/fixtures/v3/
+JsonDispatch versioning and application API versioning are separate contracts:
 
-## Validate
+| Signal | Purpose |
+| --- | --- |
+| `application/vnd.<vendor>.jd.v3+json` | Selects JsonDispatch major version 3. |
+| `X-Api-Version` | Requests an application API version. |
+| `X-Api-Version-Selected` | Reports the exact application API version served. |
+| `specification.json` | Pins the complete JsonDispatch specification release. |
+
+Implementations should pin the complete specification version rather than
+depending only on the media-type major.
+
+## Conformance artifacts
+
+Conformance is defined jointly by the normative prose and machine-readable
+artifacts:
+
+| Artifact | Purpose |
+| --- | --- |
+| [Specification source](docs/spec) | Normative requirements, examples, and implementation recommendations |
+| [Version manifest](specification.json) | Current specification and artifact locations |
+| [JSON Schemas](schemas/v3) | Envelope, HTTP response, issue, link, property, reference, and pagination validation |
+| [Positive fixtures](fixtures/v3/positive) | Canonical conforming responses |
+| [Negative fixtures](fixtures/v3/negative) | Responses that implementations must reject |
+| [Fixture manifest](fixtures/v3/manifest.json) | Expected result and violated rule for every fixture |
+
+Current published development artifacts:
+
+- [Envelope schema](https://docs.infocyph.com/projects/json-dispatch/en/latest/schemas/v3/envelope.schema.json)
+- [HTTP-response schema](https://docs.infocyph.com/projects/json-dispatch/en/latest/schemas/v3/http-response.schema.json)
+- [Fixture manifest](https://docs.infocyph.com/projects/json-dispatch/en/latest/fixtures/v3/manifest.json)
+- [Specification manifest](https://docs.infocyph.com/projects/json-dispatch/en/latest/specification.json)
+
+Rules that cannot be expressed completely by JSON Schema—such as HTTP
+field-name case insensitivity, media-range selection, identifier uniqueness,
+pagination arithmetic, and sensitive-data redaction—remain normative and
+require implementation-level tests.
+
+## Validate locally
+
+Requires Python 3.11 or later.
 
 ```bash
 python3 -m pip install -r docs/requirements.txt
 python3 tools/check_conformance.py
-sphinx-build -W --keep-going -b html docs docs/_build/html
+python3 -m sphinx -W --keep-going -b html docs docs/_build/html
 ```
 
-JsonDispatch contains no PHP implementation, Composer package, framework
-adapter, authentication system, middleware, or runtime dependency.
+The conformance check verifies all schemas, the specification and fixture
+manifests, every positive fixture, and every negative fixture. The same checks
+run in GitHub Actions and before Read the Docs publishes a build.
+
+## Project scope
+
+This repository owns the JsonDispatch specification and its conformance
+artifacts. It intentionally contains no runtime implementation, Composer
+package, framework adapter, middleware, authentication system, or storage
+integration.
+
+Language and framework implementations remain independent projects and prove
+compatibility against a pinned JsonDispatch release.
+
+## Normative changes
+
+A change to normative behavior must:
+
+1. use the standards language defined by the specification;
+2. update every affected chapter and schema consistently;
+3. add positive or negative fixtures for machine-testable behavior;
+4. preserve published artifacts unchanged; and
+5. follow semantic versioning when conformance behavior changes.
