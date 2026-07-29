@@ -1,0 +1,22 @@
+{
+  "http_status": 422,
+  "headers": {
+    "Content-Type": "application/vnd.infocyph.jd.v3+json; charset=utf-8",
+    "X-Api-Version-Selected": "1.0.0",
+    "X-Request-Id": "request-source-two-locations",
+    "Vary": "Accept, X-Api-Version"
+  },
+  "body": {
+    "status": "fail",
+    "data": [
+      {
+        "code": "SOURCE_AMBIGUOUS",
+        "title": "Source is ambiguous",
+        "source": {
+          "pointer": "/email",
+          "parameter": "email"
+        }
+      }
+    ]
+  }
+}

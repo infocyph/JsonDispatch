@@ -1,0 +1,12 @@
+{
+  "http_status": 200,
+  "headers": {
+    "Content-Type": "application/vnd.infocyph.jd.v3+json; charset=utf-8",
+    "X-Api-Version-Selected": "v1",
+    "X-Request-Id": "request-invalid-version",
+    "Vary": "Accept, X-Api-Version"
+  },
+  "body": {
+    "status": "success"
+  }
+}

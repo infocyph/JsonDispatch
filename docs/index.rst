@@ -1,16 +1,13 @@
-JsonDispatch – Developer Guide
-==============================
+JsonDispatch 3.0.0
+==================
 
-Welcome! This site hosts the **JsonDispatch** specification and examples.
-
-- **What is it?** A lightweight, production-ready JSON response spec.
-- **Why use it?** Stable envelope (``success`` / ``fail`` / ``error``), server-generated tracing with
-  ``X-Request-Id`` and clear version signaling via request ``X-Api-Version`` and response
-  ``X-Api-Version-Selected``.
+JsonDispatch is a language-neutral JSON HTTP response specification. The
+normative chapters define conformance; examples and recommendations are
+explicitly non-normative.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents
+   :caption: Specification
 
    spec/01-introduction
    spec/02-media-types-versioning

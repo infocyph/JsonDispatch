@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.infocyph.com/projects/json-dispatch/en/3.0.0/schemas/v3/pagination.schema.json",
+  "title": "JsonDispatch v3 pagination",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/offset"
+    },
+    {
+      "$ref": "#/$defs/cursor"
+    }
+  ],
+  "$defs": {
+    "offset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "offset",
+        "limit",
+        "count"
+      ],
+      "properties": {
+        "mode": {
+          "const": "offset"
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "cursor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "limit",
+        "count",
+        "has_more"
+      ],
+      "properties": {
+        "mode": {
+          "const": "cursor"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "has_more": {
+          "type": "boolean"
+        },
+        "next_cursor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "previous_cursor": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "has_more": {
+                "const": true
+              }
+            },
+            "required": [
+              "has_more"
+            ]
+          },
+          "then": {
+            "required": [
+              "next_cursor"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "next_cursor"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

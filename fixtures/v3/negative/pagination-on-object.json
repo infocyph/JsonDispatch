@@ -1,0 +1,27 @@
+{
+  "http_status": 200,
+  "headers": {
+    "Content-Type": "application/vnd.infocyph.jd.v3+json; charset=utf-8",
+    "X-Api-Version-Selected": "1.0.0",
+    "X-Request-Id": "request-pagination-object",
+    "Vary": "Accept, X-Api-Version"
+  },
+  "body": {
+    "status": "success",
+    "data": {},
+    "_properties": {
+      "/data": {
+        "type": "object",
+        "pagination": {
+          "mode": "offset",
+          "offset": 0,
+          "limit": 20,
+          "count": 0
+        }
+      }
+    },
+    "_links": {
+      "self": "/articles"
+    }
+  }
+}

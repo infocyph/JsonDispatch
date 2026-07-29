@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.infocyph.com/projects/json-dispatch/en/3.0.0/schemas/v3/link.schema.json",
+  "title": "JsonDispatch v3 link map",
+  "type": "object",
+  "minProperties": 1,
+  "propertyNames": {
+    "anyOf": [
+      {
+        "pattern": "^[a-z][a-z0-9_.:-]*$"
+      },
+      {
+        "format": "uri"
+      }
+    ]
+  },
+  "additionalProperties": {
+    "$ref": "#/$defs/link"
+  },
+  "$defs": {
+    "link": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "format": "uri-reference"
+        },
+        {
+          "$ref": "#/$defs/linkObject"
+        }
+      ]
+    },
+    "linkObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "href"
+      ],
+      "properties": {
+        "href": {
+          "type": "string",
+          "minLength": 1,
+          "format": "uri-reference"
+        },
+        "type": {
+          "type": "string",
+          "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+/[!#$%&'*+.^_`|~0-9A-Za-z-]+(?:\\s*;.*)?$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hreflang": {
+          "type": "string",
+          "minLength": 2
+        },
+        "meta": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

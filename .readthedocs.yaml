@@ -4,9 +4,13 @@ build:
   os: ubuntu-24.04
   tools:
     python: "3.11"
+  jobs:
+    pre_build:
+      - python tools/check_conformance.py
 
 sphinx:
   configuration: docs/conf.py
+  fail_on_warning: true
 
 python:
   install:

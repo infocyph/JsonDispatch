@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.infocyph.com/projects/json-dispatch/en/3.0.0/schemas/v3/issue.schema.json",
+  "title": "JsonDispatch v3 issue",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "title"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "detail": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "meta": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "maxProperties": 1,
+      "properties": {
+        "pointer": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "parameter": {
+          "type": "string",
+          "minLength": 1
+        },
+        "header": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resource": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

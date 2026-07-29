@@ -1,109 +1,64 @@
-9. Compatibility & Evolution
-============================
+9. Compatibility and evolution
+==============================
 
-JsonDispatch is designed for **long-lived APIs** that evolve gracefully without breaking existing clients.
+9.1 Specification versions
+--------------------------
 
-.. important::
+JsonDispatch follows semantic versioning:
 
-   ⚙️ **Evolve forward, never break back.**
+- A **major** release may change a normative schema, remove or change a
+  requirement, or alter envelope semantics.
+- A **minor** release may add conformance fixtures, non-breaking normative
+  clarification, or optional guidance that remains valid under the existing
+  schemas.
+- A **patch** release corrects editorial defects without changing conforming
+  behavior.
 
+An implementation MUST pin a complete specification version. It MUST rerun all
+positive and negative fixtures before changing that pin.
 
-9.1 Core Compatibility Rules
-----------------------------
+The media type major changes only for a JsonDispatch major release. JsonDispatch
+3.x uses ``jd.v3+json``.
 
-When making changes to your API responses:
+9.2 Application API evolution
+-----------------------------
 
-- **Never remove a field.** Old clients may still depend on it.
-- **Never change the type** of an existing field. A string should never become an object and an object should never
-  become an array.
-- **Only add new fields** (preferably optional ones with sensible defaults).
-- **Deprecate before removing.** Mark old fields with ``_properties.deprecation`` and provide documentation for migration.
+Application API versioning is independent from JsonDispatch versioning. Within
+one application API major, a producer:
 
-**Example**
+- MUST NOT remove a documented field;
+- MUST NOT change a documented field's JSON type or meaning;
+- MAY add documented optional fields;
+- MAY deprecate a field while continuing to emit it; and
+- SHOULD provide a migration URI through the relevant property descriptor.
 
-.. code-block:: json
+Clients of a compatible application API minor MUST ignore unknown members
+inside application-owned ``data`` and ``meta`` objects. This rule does not
+permit unknown JsonDispatch envelope or issue members.
 
-   {
-     "_properties": {
-       "legacyTitle": {
-         "type": "string",
-         "name": "legacy-title",
-         "deprecation": "https://api.example.com/docs/v2/articles#title"
-       }
-     }
-   }
+A producer that removes a field, changes its type, or changes its meaning MUST
+select a new application API major.
 
-This approach ensures:
+9.3 Deprecation and retirement
+------------------------------
 
-- Older clients keep working as expected.
-- Newer clients can progressively adopt new structures.
+A deprecated application API SHOULD include a standard ``Deprecation`` response
+field. A scheduled retirement SHOULD also include ``Sunset``.
 
+After an advertised version is retired, a request for that version MUST receive
+``410 Gone`` with ``status`` equal to ``fail`` and issue code
+``API_VERSION_RETIRED`` when a JsonDispatch response can be negotiated.
 
-9.2 How to Introduce Breaking Changes
--------------------------------------
+The response SHOULD link to supported versions or migration documentation.
+JsonDispatch does not prescribe a support-window duration.
 
-When a breaking change becomes necessary:
+9.4 Schema compatibility
+------------------------
 
-1. Increment the **major version** in the request ``Accept`` media type.
+The schema at a published version is immutable. Corrections that change which
+instances validate require a new specification version and a new artifact
+path.
 
-   **Request**
-
-   .. code-block:: http
-
-      X-Api-Version: 2.0.0
-      Accept: application/vnd.infocyph.jd.v2+json
-
-   **Response**
-
-   .. code-block:: http
-
-      HTTP/1.1 200 OK
-      X-Api-Version-Selected: 2.0.0
-
-2. Maintain the old major version (v1) in production for a transition period. Deprecate it gradually using
-   communication and version headers.
-3. Publish updated documentation for each major version side-by-side.
-4. Avoid “soft breaks” (changing existing semantics without version bumps). Always be explicit.
-
-
-9.3 Recommended Evolution Workflow
-----------------------------------
-
-.. list-table::
-   :header-rows: 1
-   :widths: 10 30 60
-
-   * - Step
-     - Action
-     - Example
-   * - 1
-     - Add field
-     - Add ``_properties.template``
-   * - 2
-     - Mark old field deprecated
-     - ``_properties.oldField.deprecation``
-   * - 3
-     - Announce upcoming version
-     - Changelog + docs
-   * - 4
-     - Introduce new major version
-     - ``v2`` media type
-   * - 5
-     - Sunset old version
-     - Remove after clients migrate
-
-
-9.4 Version Lifecycle Enforcement
----------------------------------
-
-To keep version transitions predictable, define and publish a support window for each served major version.
-
-- A new major version release **SHOULD** keep the previous major available for a documented transition period
-  (recommended minimum: 24 months).
-- During that transition period, responses from the older major **SHOULD** include:
-
-  - ``Deprecation`` (HTTP-date or ``true`` when date-only policy is not used)
-  - ``Sunset`` (RFC 8594 HTTP-date when that major will be retired)
-
-- After the sunset date, requests targeting the retired version **MUST** return ``410 Gone``.
-- ``410 Gone`` responses **SHOULD** include actionable migration details (supported versions and documentation links).
+Producers MUST NOT replace a published schema or fixture in place. Documentation
+may correct prose without a new schema path only when the correction does not
+change conforming behavior.

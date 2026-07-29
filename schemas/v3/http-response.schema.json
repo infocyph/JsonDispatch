@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.infocyph.com/projects/json-dispatch/en/3.0.0/schemas/v3/http-response.schema.json",
+  "title": "JsonDispatch v3 canonical HTTP response fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "http_status",
+    "headers",
+    "body"
+  ],
+  "properties": {
+    "http_status": {
+      "type": "integer",
+      "oneOf": [
+        {
+          "minimum": 200,
+          "maximum": 203
+        },
+        {
+          "minimum": 206,
+          "maximum": 299
+        },
+        {
+          "minimum": 400,
+          "maximum": 599
+        }
+      ]
+    },
+    "headers": {
+      "type": "object",
+      "required": [
+        "Content-Type",
+        "X-Api-Version-Selected",
+        "X-Request-Id",
+        "Vary"
+      ],
+      "properties": {
+        "Content-Type": {
+          "type": "string",
+          "pattern": "^application/vnd\\.[a-z0-9][a-z0-9.-]*\\.jd\\.v3\\+json;\\s*charset=utf-8$"
+        },
+        "X-Api-Version-Selected": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+        },
+        "X-Request-Id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "X-Correlation-Id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "Vary": {
+          "type": "string",
+          "allOf": [
+            {
+              "pattern": "(^|,\\s*)Accept(\\s*,|$)"
+            },
+            {
+              "pattern": "(^|,\\s*)X-Api-Version(\\s*,|$)"
+            }
+          ]
+        }
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "body": {
+      "$ref": "envelope.schema.json"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "http_status": {
+            "minimum": 200,
+            "maximum": 299
+          }
+        },
+        "required": [
+          "http_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "body": {
+            "properties": {
+              "status": {
+                "const": "success"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "http_status": {
+            "minimum": 400,
+            "maximum": 499
+          }
+        },
+        "required": [
+          "http_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "body": {
+            "properties": {
+              "status": {
+                "const": "fail"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "http_status": {
+            "minimum": 500,
+            "maximum": 599
+          }
+        },
+        "required": [
+          "http_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "body": {
+            "properties": {
+              "status": {
+                "const": "error"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

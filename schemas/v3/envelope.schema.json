@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.infocyph.com/projects/json-dispatch/en/3.0.0/schemas/v3/envelope.schema.json",
+  "title": "JsonDispatch v3 envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status"
+  ],
+  "properties": {
+    "status": {
+      "enum": [
+        "success",
+        "fail",
+        "error"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "data": true,
+    "_properties": {
+      "$ref": "property.schema.json"
+    },
+    "_references": {
+      "$ref": "reference.schema.json"
+    },
+    "_links": {
+      "$ref": "link.schema.json"
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "status": {
+          "const": "success"
+        }
+      },
+      "required": [
+        "status"
+      ]
+    },
+    {
+      "properties": {
+        "status": {
+          "const": "fail"
+        },
+        "data": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "issue.schema.json"
+          }
+        }
+      },
+      "required": [
+        "status",
+        "data"
+      ]
+    },
+    {
+      "properties": {
+        "status": {
+          "const": "error"
+        },
+        "data": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "issue.schema.json"
+          }
+        }
+      },
+      "required": [
+        "status",
+        "data"
+      ]
+    }
+  ],
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "_properties"
+        ],
+        "properties": {
+          "_properties": {
+            "required": [
+              "/data"
+            ],
+            "properties": {
+              "/data": {
+                "required": [
+                  "pagination"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "_links"
+        ],
+        "properties": {
+          "_links": {
+            "required": [
+              "self"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "_properties"
+        ],
+        "properties": {
+          "_properties": {
+            "required": [
+              "/data"
+            ],
+            "properties": {
+              "/data": {
+                "required": [
+                  "pagination"
+                ],
+                "properties": {
+                  "pagination": {
+                    "required": [
+                      "mode",
+                      "has_more"
+                    ],
+                    "properties": {
+                      "mode": {
+                        "const": "cursor"
+                      },
+                      "has_more": {
+                        "const": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "_links"
+        ],
+        "properties": {
+          "_links": {
+            "required": [
+              "self",
+              "next"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

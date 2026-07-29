@@ -1,53 +1,76 @@
-1. Introduction
-=============
+1. Scope and conformance
+========================
 
-JsonDispatch is a **lightweight API response specification** built on top of JSON. It defines a predictable, flexible response envelope for REST APIs so clients always know where to look for the status, data, and helpful metadata.
+JsonDispatch 3.0.0 is a language-neutral specification for JSON HTTP response
+envelopes. It gives clients one deterministic place to inspect an outcome,
+payload, machine-readable issues, resource metadata, references, and links.
 
-Think of it as the **contract** between your backend and your clients (mobile, web, services). Instead of every project reinventing its own shape, JsonDispatch gives you:
+1.1 Normative language
+----------------------
 
-- **Consistency** — the same envelope across all endpoints.
-- **Traceability** — every response carries a server-generated ``X-Request-Id``.
-- **Clarity** — clean separation between ``success``, ``fail``, and ``error``.
-- **Flexibility** — optional ``_references``, ``_properties``, and ``_links`` for richer responses.
+The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHOULD**, **SHOULD NOT**,
+and **MAY** are to be interpreted as described by BCP 14 (RFC 2119 and RFC
+8174) when, and only when, they appear in uppercase.
 
-1.2 Why another spec?
+Text labelled "Non-normative" does not define conformance. Examples illustrate
+valid shapes but do not add requirements beyond the normative chapters.
+
+1.2 Scope
+---------
+
+This specification defines:
+
+- the JsonDispatch vendor media type and version negotiation;
+- response identification headers;
+- the JSON envelope and its status semantics;
+- machine-readable issue objects;
+- resource properties, references, and links;
+- offset and cursor pagination metadata; and
+- compatibility and conformance rules.
+
+JsonDispatch does not define request-body schemas, routing, authentication,
+authorization, sessions, middleware, logging, storage, serialization APIs,
+framework adapters, or programming-language helpers.
+
+1.3 Version identity
 --------------------
 
-If you've worked with APIs before, you've probably seen:
+The JsonDispatch specification version and an application's API version are
+independent:
 
-- ``{ "ok": true }`` here,
-- ``{ "status": "success", "payload": … }`` there,
-- and somewhere else … a raw stack trace in JSON.
+- ``3.0.0`` is the version of this specification.
+- ``v3`` in the media type selects this specification's envelope major.
+- ``X-Api-Version`` and ``X-Api-Version-Selected`` identify the application
+  API contract, not the JsonDispatch specification release.
 
-This chaos makes it hard to build **generic clients**, reason about failures, and correlate logs across services. JsonDispatch standardizes the response shape while staying practical and easy to adopt in real systems.
+An implementation pins the complete JsonDispatch specification version in its
+own release metadata. It MUST NOT report that value through
+``X-Api-Version-Selected``.
 
-1.3 Core Principles
-------------------
+1.4 Conformance targets
+-----------------------
 
-JsonDispatch is built around a few simple rules:
+A **conforming envelope** satisfies the v3 envelope schema and every applicable
+normative rule in Chapters 4, 6, 7, and 8.
 
-**Never remove, only add**
+A **conforming HTTP response** has a conforming envelope, satisfies the
+applicable status and header rules in Chapters 2 and 3, and uses an HTTP status
+consistent with the envelope status.
 
-Responses evolve, but we don't break clients. Deprecate fields instead of deleting them.
+A **conforming implementation** emits only conforming HTTP responses when it
+selects a JsonDispatch representation. It MAY expose endpoints that return
+other representations; those responses are outside JsonDispatch conformance.
 
-**Trace everything (server-generated IDs)**
+The versioned schemas and fixtures described in Chapter 11 are normative
+artifacts. Prose controls when a behavior cannot be expressed by JSON Schema.
 
-The server **must** generate and return a unique ``X-Request-Id`` on every response (clients don't send it). This makes correlation and debugging straightforward.
+1.5 Design constraints
+----------------------
 
-**Clear status semantics**
-
-- ``success`` → everything worked,
-- ``fail`` → the request was invalid (validation, preconditions, etc.),
-- ``error`` → the server or a dependency failed.
-
-**Flexible metadata when you need it**
-
-- ``_references`` → turn IDs into human-friendly values,
-- ``_properties`` → describe the data shape, pagination, and deprecations,
-- ``_links`` → make collections navigable.
-
-**Versioned but predictable**
-
-- Requests send ``X-Api-Version`` (full SemVer) to declare the desired API version.
-- The response carries ``X-Api-Version-Selected`` (full SemVer) to confirm the version actually served.
-- ``Accept`` uses the JsonDispatch vendor media type (e.g., ``application/vnd.infocyph.jd.v1+json``) on JSON endpoints.
+- Clients MUST be able to parse the envelope without framework knowledge.
+- A response MUST NOT expose secrets, credentials, stack traces, SQL, internal
+  paths, or other private implementation detail.
+- Optional members MUST be omitted when they have no value; placeholder empty
+  metadata SHOULD NOT be emitted.
+- Producers SHOULD avoid computing optional properties, references, or links
+  that the selected representation does not require.

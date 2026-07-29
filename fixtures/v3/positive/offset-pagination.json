@@ -1,0 +1,38 @@
+{
+  "http_status": 200,
+  "headers": {
+    "Content-Type": "application/vnd.acme.jd.v3+json; charset=utf-8",
+    "X-Api-Version-Selected": "2.1.0",
+    "X-Request-Id": "request-offset-21",
+    "Vary": "Accept, X-Api-Version"
+  },
+  "body": {
+    "status": "success",
+    "data": [
+      {
+        "id": 21
+      },
+      {
+        "id": 22
+      }
+    ],
+    "_properties": {
+      "/data": {
+        "type": "array",
+        "name": "articles",
+        "pagination": {
+          "mode": "offset",
+          "offset": 20,
+          "limit": 2,
+          "count": 2,
+          "total": 48
+        }
+      }
+    },
+    "_links": {
+      "self": "/articles?offset=20&limit=2",
+      "next": "/articles?offset=22&limit=2",
+      "prev": "/articles?offset=18&limit=2"
+    }
+  }
+}

@@ -1,85 +1,45 @@
-5. Response Examples
-====================
+5. Examples
+===========
 
-Examples are the fastest way to understand JsonDispatch. Below are common scenarios — **success**, **fail**, **error**, and **paginated** responses — exactly as they should appear in production.
+.. note::
 
+   This chapter is non-normative. The schemas and normative chapters determine
+   conformance.
 
-5.1 A Simple Success Response
------------------------------
-
-**Request**
-
-.. code-block:: http
-
-   GET /articles/42
-   Accept: application/vnd.infocyph.jd.v1+json
-   X-Api-Version: 1.4.0
-
-**Response**
+5.1 Success
+-----------
 
 .. code-block:: http
 
    HTTP/1.1 200 OK
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.3.1
-   X-Request-Id: aabbccdd-1122-3344-5566-77889900aabb
-
-**Body**
+   Content-Type: application/vnd.infocyph.jd.v3+json; charset=utf-8
+   X-Api-Version-Selected: 1.4.2
+   X-Request-Id: 019fb440-4e83-7b1b-9ef9-44a80771f181
+   Vary: Accept, X-Api-Version
 
 .. code-block:: json
 
    {
      "status": "success",
-     "message": "Article fetched successfully",
      "data": {
-       "type": "article",
-       "attributes": {
-         "id": 42,
-         "title": "JsonDispatch in Action",
-         "category": 2
-       }
+       "id": "article-42",
+       "title": "JsonDispatch 3"
      },
-     "_references": {
-       "category": {
-         "1": "News",
-         "2": "Tutorial",
-         "3": "Opinion"
-       }
+     "_links": {
+       "self": "https://api.example.com/articles/article-42"
      }
    }
 
-
-5.2 A Fail Response (Validation Issue)
---------------------------------------
-
-**Request**
+5.2 Validation failure
+----------------------
 
 .. code-block:: http
 
-   POST /articles
-   Accept: application/vnd.infocyph.jd.v1+json
-   X-Api-Version: 1.4.0
-   Content-Type: application/json; charset=utf-8
-
-**Body**
-
-.. code-block:: json
-
-   {
-     "title": "Hi",
-     "category": 5
-   }
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 422 Unprocessable Entity
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.3.1
-   X-Request-Id: f4b44a6e-d593-11ec-9d64-0242ac120002
-
-**Body**
+   HTTP/1.1 422 Unprocessable Content
+   Content-Type: application/vnd.infocyph.jd.v3+json; charset=utf-8
+   X-Api-Version-Selected: 1.4.2
+   X-Request-Id: 019fb440-4e83-7b1b-9ef9-44a80771f182
+   Vary: Accept, X-Api-Version
 
 .. code-block:: json
 
@@ -88,615 +48,132 @@ Examples are the fastest way to understand JsonDispatch. Below are common scenar
      "message": "Validation failed",
      "data": [
        {
-         "status": 422,
-         "source": "/data/attributes/title",
-         "title": "Title too short",
-         "detail": "The title must be at least 5 characters long."
+         "code": "TITLE_TOO_SHORT",
+         "title": "Title is too short",
+         "detail": "Provide at least five characters.",
+         "source": {
+           "pointer": "/title"
+         }
        },
        {
-         "status": 422,
-         "source": "/data/attributes/category",
-         "title": "Invalid category",
-         "detail": "Category must be one of: 1, 2, 3."
+         "code": "CATEGORY_INVALID",
+         "title": "Category is invalid",
+         "source": {
+           "pointer": "/category"
+         },
+         "meta": {
+           "allowed": ["news", "tutorial", "opinion"]
+         }
        }
      ]
    }
 
-
-5.3 An Error Response (System Failure)
---------------------------------------
-
-**Request**
-
-.. code-block:: http
-
-   GET /articles
-   Accept: application/vnd.infocyph.jd.v1+json
-   X-Api-Version: 1.4.0
-
-**Response**
+5.3 Dependency error
+--------------------
 
 .. code-block:: http
 
    HTTP/1.1 503 Service Unavailable
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.3.1
-   X-Request-Id: c043e23a-4b26-4a05-96c4-5c60fcc18d50
-
-**Body**
+   Content-Type: application/vnd.infocyph.jd.v3+json; charset=utf-8
+   X-Api-Version-Selected: 1.4.2
+   X-Request-Id: 019fb440-4e83-7b1b-9ef9-44a80771f183
+   Vary: Accept, X-Api-Version
+   Retry-After: 30
 
 .. code-block:: json
 
    {
      "status": "error",
-     "message": "Temporary backend outage",
-     "code": "ARTICLES_SERVICE_DOWN",
+     "message": "The service is temporarily unavailable",
      "data": [
        {
-         "status": 503,
-         "source": "articles-service",
-         "title": "Service unavailable",
-         "detail": "The Articles microservice is currently offline."
+         "code": "DEPENDENCY_UNAVAILABLE",
+         "title": "A required dependency did not respond",
+         "source": {
+           "resource": "article-store"
+         }
        }
      ]
    }
 
-
-5.4 Paginated Collection Response
----------------------------------
-
-**Request**
-
-.. code-block:: http
-
-   GET /articles?page=2&limit=3
-   Accept: application/vnd.infocyph.jd.v1+json
-   X-Api-Version: 1.4.0
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 200 OK
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.3.1
-   X-Request-Id: 77aa88bb-ccdd-eeff-0011-223344556677
-
-**Body**
+5.4 Offset pagination
+---------------------
 
 .. code-block:: json
 
    {
      "status": "success",
-     "message": "Articles listed successfully",
      "data": [
-       {
-         "type": "article",
-         "attributes": {
-           "id": 4,
-           "title": "Scaling JsonDispatch",
-           "category": 1
-         }
-       },
-       {
-         "type": "article",
-         "attributes": {
-           "id": 5,
-           "title": "Error Handling Patterns",
-           "category": 3
-         }
-       },
-       {
-         "type": "article",
-         "attributes": {
-           "id": 6,
-           "title": "Backward Compatibility Rules",
-           "category": 2
-         }
-       }
+       {"id": "article-21"},
+       {"id": "article-22"}
      ],
      "_properties": {
-       "data": {
+       "/data": {
          "type": "array",
          "name": "articles",
-         "count": 3,
-         "page": 2,
-         "range": "4–6"
+         "pagination": {
+           "mode": "offset",
+           "offset": 20,
+           "limit": 2,
+           "count": 2,
+           "total": 48
+         }
        }
      },
      "_links": {
-       "self": "https://api.example.com/articles?page=2&limit=3",
-       "next": "https://api.example.com/articles?page=3&limit=3",
-       "prev": "https://api.example.com/articles?page=1&limit=3"
+       "self": "https://api.example.com/articles?offset=20&limit=2",
+       "next": "https://api.example.com/articles?offset=22&limit=2",
+       "prev": "https://api.example.com/articles?offset=18&limit=2",
+       "first": "https://api.example.com/articles?offset=0&limit=2",
+       "last": "https://api.example.com/articles?offset=46&limit=2"
+     }
+   }
+
+5.5 Cursor pagination
+---------------------
+
+.. code-block:: json
+
+   {
+     "status": "success",
+     "data": [
+       {"id": "article-101"},
+       {"id": "article-102"}
+     ],
+     "_properties": {
+       "/data": {
+         "type": "array",
+         "name": "articles",
+         "pagination": {
+           "mode": "cursor",
+           "limit": 2,
+           "count": 2,
+           "has_more": true,
+           "next_cursor": "eyJpZCI6MTAyfQ"
+         }
+       }
      },
+     "_links": {
+       "self": "https://api.example.com/articles?limit=2",
+       "next": "https://api.example.com/articles?limit=2&cursor=eyJpZCI6MTAyfQ"
+     }
+   }
+
+5.6 References
+--------------
+
+.. code-block:: json
+
+   {
+     "status": "success",
+     "data": [
+       {"id": "article-42", "category": 2}
+     ],
      "_references": {
-       "category": {
+       "/data/*/category": {
          "1": "News",
          "2": "Tutorial",
          "3": "Opinion"
        }
      }
    }
-
-
-5.5 References in Action
-------------------------
-
-Clients no longer need to fetch category labels from another endpoint:
-
-.. code-block:: json
-
-   "attributes": {
-     "id": 42,
-     "title": "JsonDispatch in Action",
-     "category": 2
-   }
-
-Can be immediately resolved using ``_references``:
-
-.. code-block:: json
-
-   "_references": {
-     "category": {
-       "1": "News",
-       "2": "Tutorial",
-       "3": "Opinion"
-     }
-   }
-
-→ **``category: "Tutorial"``**
-
-**Key takeaways**
-
-- JsonDispatch envelope responses use ``Content-Type: application/json; charset=utf-8``; file/stream responses use their native media type.
-- ``X-Api-Version-Selected`` and ``X-Request-Id`` are generated by the **server**, not clients.
-- The envelope is consistent — clients only need to check ``status`` and read ``data``.
-
-
-5.6 Async & long-running operations
------------------------------------
-
-Some operations take too long to complete within a typical HTTP request timeout (e.g., report generation, video processing, batch imports). JsonDispatch provides a consistent pattern for handling asynchronous jobs.
-
-
-5.6.1 Initiating an async job (202 Accepted)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-When a request is accepted but processing is deferred, return **``202 Accepted``** with job information.
-
-**Request**
-
-.. code-block:: http
-
-   POST /api/v1/reports/quarterly
-   Accept: application/vnd.infocyph.jd.v1+json
-   X-Api-Version: 1.4.0
-   Content-Type: application/json; charset=utf-8
-   Authorization: Bearer eyJhbGci...
-
-   {
-     "year": 2025,
-     "quarter": 3,
-     "format": "pdf"
-   }
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 202 Accepted
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.4.0
-   X-Request-Id: 8f3d4e2a-9b1c-4f5e-8a7d-2c3b4d5e6f7a
-   Location: https://api.example.com/api/v1/jobs/job_7x9Kp2Qm
-
-**Body**
-
-.. code-block:: json
-
-   {
-     "status": "success",
-     "message": "Report generation job created",
-     "data": {
-       "job_id": "job_7x9Kp2Qm",
-       "state": "pending",
-       "created_at": "2025-10-22T14:30:00Z",
-       "estimated_completion": "2025-10-22T14:35:00Z"
-     },
-     "_links": {
-       "self": "https://api.example.com/api/v1/jobs/job_7x9Kp2Qm",
-       "cancel": {
-         "href": "https://api.example.com/api/v1/jobs/job_7x9Kp2Qm",
-         "meta": { "method": "DELETE" }
-       }
-     },
-     "_properties": {
-       "job": {
-         "type": "report_generation",
-         "priority": "normal",
-         "expires_at": "2025-10-29T14:30:00Z"
-       }
-     }
-   }
-
-.. tip::
-
-   **Key elements**
-   - ``Location`` header points to the job status endpoint.
-   - ``state`` indicates current job status (``pending``, ``processing``, ``completed``, ``failed``).
-   - ``_links.self`` provides the polling URL.
-
-
-5.6.2 Polling for job status
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Clients poll the job status URL to check progress.
-
-**Request**
-
-.. code-block:: http
-
-   GET /api/v1/jobs/job_7x9Kp2Qm
-   Accept: application/vnd.infocyph.jd.v1+json
-   X-Api-Version: 1.4.0
-   Authorization: Bearer eyJhbGci...
-
-**Response (processing)**
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 200 OK
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.4.0
-   X-Request-Id: 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e
-
-**Body**
-
-.. code-block:: json
-
-   {
-     "status": "success",
-     "message": "Job is processing",
-     "data": {
-       "job_id": "job_7x9Kp2Qm",
-       "state": "processing",
-       "progress": 65,
-       "updated_at": "2025-10-22T14:33:00Z"
-     },
-     "_properties": {
-       "progress": {
-         "percentage": 65,
-         "current_step": "Generating charts",
-         "total_steps": 5
-       }
-     }
-   }
-
-**Response (completed)**
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 200 OK
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.4.0
-   X-Request-Id: 3c4d5e6f-7a8b-4c9d-0e1f-2a3b4c5d6e7f
-
-**Body**
-
-.. code-block:: json
-
-   {
-     "status": "success",
-     "message": "Job completed successfully",
-     "data": {
-       "job_id": "job_7x9Kp2Qm",
-       "state": "completed",
-       "completed_at": "2025-10-22T14:34:30Z",
-       "result": {
-         "file_size": 2458123,
-         "file_type": "application/pdf"
-       }
-     },
-     "_links": {
-       "download": {
-         "href": "https://cdn.example.com/reports/Q3-2025.pdf",
-         "meta": {
-           "method": "GET",
-           "expires_at": "2025-10-29T14:34:30Z"
-         }
-       }
-     }
-   }
-
-.. tip::
-
-   **Polling best practices**
-   - Use exponential backoff (start with 1s, increase to 5s, 10s, 30s).
-   - Respect ``Retry-After`` headers if provided.
-   - Set a maximum polling duration (e.g., 10 minutes) before timing out.
-
-
-5.6.3 Webhook notifications
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-For better efficiency, clients can register webhooks instead of polling.
-
-**Job creation with webhook**
-
-**Request**
-
-.. code-block:: http
-
-   POST /api/v1/reports/quarterly
-   Accept: application/vnd.infocyph.jd.v1+json
-   X-Api-Version: 1.4.0
-   Content-Type: application/json; charset=utf-8
-
-   {
-     "year": 2025,
-     "quarter": 3,
-     "webhook_url": "https://client.example.com/webhooks/reports"
-   }
-
-**Webhook payload (on completion)**
-
-**Request**
-
-.. code-block:: http
-
-   POST /webhooks/reports
-   Content-Type: application/json; charset=utf-8
-   X-Webhook-Signature: sha256=2f5a1b8c...
-   X-Request-Id: 4d5e6f7a-8b9c-4d0e-1f2a-3b4c5d6e7f8a
-
-.. code-block:: json
-
-   {
-     "event": "job.completed",
-     "job_id": "job_7x9Kp2Qm",
-     "state": "completed",
-     "completed_at": "2025-10-22T14:34:30Z",
-     "_links": {
-       "job": "https://api.example.com/api/v1/jobs/job_7x9Kp2Qm",
-       "download": "https://cdn.example.com/reports/Q3-2025.pdf"
-     }
-   }
-
-.. note::
-
-   **Security:** Always verify webhook signatures using HMAC-SHA256 or similar.
-
-
-5.6.4 Job failure handling
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-When a job fails, the status endpoint returns the failure details.
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 200 OK
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.4.0
-   X-Request-Id: 5e6f7a8b-9c0d-4e1f-2a3b-4c5d6e7f8a9b
-
-**Body**
-
-.. code-block:: json
-
-   {
-     "status": "success",
-     "message": "Job status retrieved",
-     "data": {
-       "job_id": "job_7x9Kp2Qm",
-       "state": "failed",
-       "failed_at": "2025-10-22T14:33:15Z",
-       "error": {
-         "code": "INSUFFICIENT_DATA",
-         "message": "Unable to generate report: Q3 data is incomplete"
-       }
-     },
-     "_links": {
-       "retry": {
-         "href": "https://api.example.com/api/v1/reports/quarterly",
-         "meta": { "method": "POST" }
-       }
-     }
-   }
-
-.. note::
-
-   The outer ``status`` is ``success`` because the API call to retrieve the job status succeeded. The job's internal ``state`` is ``failed``.
-
-
-5.7 Bulk operations & partial success
--------------------------------------
-
-When processing multiple items in a single request (e.g., batch create, bulk delete, import operations), some items may succeed while others fail. JsonDispatch provides a consistent pattern for representing partial success scenarios.
-
-
-5.7.1 Partial success response structure
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-For operations where some items succeed and others fail, use **``207 Multi-Status``** with detailed per-item results.
-
-**Request**
-
-.. code-block:: http
-
-   POST /api/v1/users/bulk
-   Accept: application/vnd.infocyph.jd.v1+json
-   X-Api-Version: 1.4.0
-   Content-Type: application/json; charset=utf-8
-
-   {
-     "users": [
-       { "email": "alice@example.com", "name": "Alice" },
-       { "email": "bob@example.com", "name": "Bob" },
-       { "email": "invalid-email", "name": "Charlie" },
-       { "email": "alice@example.com", "name": "Duplicate Alice" }
-     ]
-   }
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 207 Multi-Status
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.4.0
-   X-Request-Id: 6f7a8b9c-0d1e-4f2a-3b4c-5d6e7f8a9b0c
-
-**Body**
-
-.. code-block:: json
-
-   {
-     "status": "success",
-     "message": "Bulk operation completed with partial success",
-     "data": {
-       "summary": {
-         "total": 4,
-         "succeeded": 2,
-         "failed": 2
-       },
-       "results": [
-         {
-           "index": 0,
-           "status": "success",
-           "data": {
-             "id": "usr_1A2B3C",
-             "email": "alice@example.com"
-           }
-         },
-         {
-           "index": 1,
-           "status": "success",
-           "data": {
-             "id": "usr_4D5E6F",
-             "email": "bob@example.com"
-           }
-         },
-         {
-           "index": 2,
-           "status": "fail",
-           "errors": [
-             {
-               "field": "email",
-               "code": "INVALID_EMAIL",
-               "message": "Invalid email format"
-             }
-           ]
-         },
-         {
-           "index": 3,
-           "status": "fail",
-           "errors": [
-             {
-               "field": "email",
-               "code": "DUPLICATE_EMAIL",
-               "message": "Email already exists"
-             }
-           ]
-         }
-       ]
-     },
-     "_properties": {
-       "data": {
-         "type": "bulk_result",
-         "operation": "user_creation"
-       }
-     }
-   }
-
-.. tip::
-
-   **Key elements**
-   - Outer ``status`` is ``success`` (the bulk request itself succeeded).
-   - ``summary`` provides aggregate counts.
-   - Each item in ``results`` has its own ``status`` (``success`` or ``fail``).
-   - ``index`` maps back to the original request array position.
-
-
-5.7.2 Atomic vs non-atomic operations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-**Atomic operations (all-or-nothing)**
-
-If the operation is transactional and any failure should roll back all changes, return standard error responses:
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 400 Bad Request
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.4.0
-   X-Request-Id: 7a8b9c0d-1e2f-4a3b-4c5d-6e7f8a9b0c1d
-
-.. code-block:: json
-
-   {
-     "status": "fail",
-     "message": "Bulk operation failed. No changes were applied",
-     "data": {
-       "errors": [
-         {
-           "index": 2,
-           "field": "email",
-           "code": "INVALID_EMAIL",
-           "message": "Invalid email format at index 2"
-         }
-       ]
-     },
-     "_properties": {
-       "operation": {
-         "type": "atomic",
-         "rollback": true
-       }
-     }
-   }
-
-**Non-atomic operations (best-effort)**
-
-Use ``207 Multi-Status`` as shown in :ref:`5.7.1 <5-7-1-partial-success-response-structure>` when partial success is acceptable.
-
-.. note::
-
-   **API design tip:** Clearly document in your API specification whether bulk endpoints are atomic or non-atomic.
-
-
-5.7.3 Batch result summary
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-For large batch operations, consider providing just the summary initially with links to detailed results:
-
-.. code-block:: json
-
-   {
-     "status": "success",
-     "message": "Bulk import completed",
-     "data": {
-       "batch_id": "batch_9x8y7z",
-       "summary": {
-         "total": 10000,
-         "succeeded": 9847,
-         "failed": 153,
-         "processing_time_ms": 45230
-       }
-     },
-     "_links": {
-       "failures": "https://api.example.com/api/v1/batches/batch_9x8y7z/failures",
-       "successes": "https://api.example.com/api/v1/batches/batch_9x8y7z/successes",
-       "download_report": "https://api.example.com/api/v1/batches/batch_9x8y7z/report.csv"
-     }
-   }
-
-.. tip::
-
-   **Performance tip:** For operations processing >1000 items, use async jobs (see Section 5.6) instead of synchronous bulk endpoints.

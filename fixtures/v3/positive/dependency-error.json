@@ -1,0 +1,23 @@
+{
+  "http_status": 503,
+  "headers": {
+    "Content-Type": "application/vnd.infocyph.jd.v3+json; charset=utf-8",
+    "X-Api-Version-Selected": "1.4.2",
+    "X-Request-Id": "019fb440-4e83-7b1b-9ef9-44a80771f183",
+    "Vary": "Accept, X-Api-Version",
+    "Retry-After": "30"
+  },
+  "body": {
+    "status": "error",
+    "message": "Temporarily unavailable",
+    "data": [
+      {
+        "code": "DEPENDENCY_UNAVAILABLE",
+        "title": "A required dependency did not respond",
+        "source": {
+          "resource": "article-store"
+        }
+      }
+    ]
+  }
+}

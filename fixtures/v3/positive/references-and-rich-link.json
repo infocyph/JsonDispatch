@@ -1,0 +1,38 @@
+{
+  "http_status": 200,
+  "headers": {
+    "Content-Type": "application/vnd.infocyph.jd.v3+json; charset=utf-8",
+    "X-Api-Version-Selected": "1.4.2",
+    "X-Request-Id": "request-reference-42",
+    "X-Correlation-Id": "article-workflow-42",
+    "Vary": "Accept, X-Api-Version"
+  },
+  "body": {
+    "status": "success",
+    "data": [
+      {
+        "id": 42,
+        "category": 2
+      }
+    ],
+    "_references": {
+      "/data/*/category": {
+        "1": "News",
+        "2": {
+          "label": "Tutorial",
+          "children": {
+            "21": "Beginner",
+            "22": "Advanced"
+          }
+        }
+      }
+    },
+    "_links": {
+      "self": {
+        "href": "https://api.example.com/articles/42",
+        "type": "application/vnd.infocyph.jd.v3+json",
+        "title": "Article 42"
+      }
+    }
+  }
+}

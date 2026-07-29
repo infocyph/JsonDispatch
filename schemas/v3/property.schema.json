@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.infocyph.com/projects/json-dispatch/en/3.0.0/schemas/v3/property.schema.json",
+  "title": "JsonDispatch v3 property map",
+  "type": "object",
+  "minProperties": 1,
+  "propertyNames": {
+    "pattern": "^/.+"
+  },
+  "properties": {
+    "/data": {
+      "$ref": "#/$defs/dataDescriptor"
+    }
+  },
+  "patternProperties": {
+    "^/(?!data$).+": {
+      "$ref": "#/$defs/descriptor"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "jsonType": {
+      "enum": [
+        "array",
+        "object",
+        "string",
+        "number",
+        "integer",
+        "boolean",
+        "null"
+      ]
+    },
+    "descriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/jsonType"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "template": {
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "deprecation": {
+          "type": "string",
+          "format": "uri-reference"
+        }
+      }
+    },
+    "dataDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/jsonType"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "template": {
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "deprecation": {
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "pagination": {
+          "$ref": "pagination.schema.json"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "pagination"
+            ]
+          },
+          "then": {
+            "properties": {
+              "type": {
+                "const": "array"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.infocyph.com/projects/json-dispatch/en/3.0.0/schemas/v3/reference.schema.json",
+  "title": "JsonDispatch v3 reference map",
+  "type": "object",
+  "minProperties": 1,
+  "propertyNames": {
+    "pattern": "^/.+"
+  },
+  "additionalProperties": {
+    "$ref": "#/$defs/lookup"
+  },
+  "$defs": {
+    "lookup": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/value"
+      }
+    },
+    "value": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "$ref": "#/$defs/node"
+        }
+      ]
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label"
+      ],
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "children": {
+          "$ref": "#/$defs/lookup"
+        }
+      }
+    }
+  }
+}

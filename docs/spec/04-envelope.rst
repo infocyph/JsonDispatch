@@ -1,273 +1,132 @@
-4. Response Envelope (The Outer Wrapper)
-========================================
+4. Response envelope
+====================
 
-Every JsonDispatch **response** is wrapped in a predictable, minimal envelope.
-This gives every API the same shape — regardless of what the data is — making client logic simpler and responses easier
-to debug.
+4.1 Top-level object
+--------------------
 
-The envelope helps you quickly understand:
-
-- what happened (``status``, ``message``)
-- what’s returned (``data``)
-- how to interpret it (``_properties``)
-- how to resolve references (``_references``)
-- how to navigate further (``_links``)
-
-
-4.1 Top-Level Members at a Glance
----------------------------------
-
-A JsonDispatch response body may contain these top-level members:
+A JsonDispatch body MUST be a JSON object. It MAY contain only these top-level
+members:
 
 .. list-table::
    :header-rows: 1
-   :widths: 18 14 12 56
+   :widths: 22 20 18 40
 
-   * - Key
+   * - Member
      - Type
      - Required
      - Purpose
    * - ``status``
      - string
-     - ✅
-     - Overall result — ``success``, ``fail`` or ``error``.
+     - Always
+     - ``success``, ``fail``, or ``error``
    * - ``message``
      - string
-     - ⚪
-     - Short, human-readable explanation.
+     - No
+     - Human-readable summary
    * - ``data``
-     - mixed
-     - ⚪
-     - Main payload (object, array, or scalar).
-   * - ``_references``
-     - object
-     - ⚪
-     - ID-to-label mapping dictionary.
+     - any JSON value
+     - For fail/error
+     - Success payload or issue array
    * - ``_properties``
      - object
-     - ⚪
-     - Metadata describing structure, count, or schema.
+     - No
+     - Resource and pagination metadata
+   * - ``_references``
+     - object
+     - No
+     - Bounded identifier-to-label mappings
    * - ``_links``
      - object
-     - ⚪
-     - Navigation links (pagination, related resources).
+     - No
+     - Typed or simple link relations
 
-.. note::
+Unknown top-level members are invalid. Applications place extension data
+inside their ``data`` payload or inside an explicitly permitted ``meta`` member
+of an issue or link object.
 
-   ⚪ = optional, depending on the ``status`` value and context.
+If present, ``message`` MUST be non-empty. Clients MUST NOT use ``message`` for
+program control or localization keys.
 
+4.2 Status and HTTP mapping
+---------------------------
 
-4.2 ``status`` — Success, Fail or Error
----------------------------------------
+``status`` MUST agree with the HTTP response status:
 
-The ``status`` field defines the overall outcome of the request.
+.. list-table::
+   :header-rows: 1
+   :widths: 20 24 56
 
-- **``success``** → the request completed successfully and data is returned.
-- **``fail``** → the client provided invalid input (validation, missing fields, etc.).
-- **``error``** → the server or an external dependency failed to process the request.
+   * - Envelope status
+     - HTTP range
+     - Meaning
+   * - ``success``
+     - ``2xx`` with a body
+     - The requested operation completed successfully.
+   * - ``fail``
+     - ``4xx``
+     - The request cannot succeed without a client-side change.
+   * - ``error``
+     - ``5xx``
+     - The producer or a dependency could not complete a valid request.
 
-**Example**
+One response has one status. A producer MUST NOT place a ``fail`` envelope on a
+``5xx`` response or an ``error`` envelope on a ``4xx`` response.
+
+``1xx`` and ``3xx`` responses do not use a JsonDispatch envelope. ``204``,
+``205``, and ``304`` do not carry a JsonDispatch body.
+
+4.3 Data
+--------
+
+For ``success``, ``data`` MAY be any JSON value and MAY be omitted when the
+successful operation has no representation-specific payload.
+
+For ``fail`` and ``error``, ``data`` is REQUIRED and MUST be a non-empty array
+of issue objects defined in Chapter 6. An empty issue array is invalid.
+
+The shape of successful ``data`` is an application API contract. JsonDispatch
+does not impose resource wrappers, ORM conventions, attribute bags, or
+identifier types.
+
+4.4 Companion members
+---------------------
+
+``_properties``, ``_references``, and ``_links`` describe the selected
+representation. They MUST NOT contain authorization decisions, credentials,
+internal service topology, or executable implementation instructions.
+
+Their complete shapes are defined in Chapters 7 and 8 and in the v3 schemas.
+Producers SHOULD omit any companion member that would otherwise be empty.
+
+4.5 Minimal examples
+--------------------
+
+Success:
 
 .. code-block:: json
 
    {
      "status": "success",
      "data": {
-       "id": 42,
-       "title": "JsonDispatch in Action"
+       "id": "article-42",
+       "title": "A predictable envelope"
      }
    }
 
-
-4.3 ``message`` — Keep It Human-Friendly
-----------------------------------------
-
-``message`` is a short sentence for humans (not parsers). Use it as a quick, meaningful summary in logs or UI alerts.
-
-.. list-table::
-   :header-rows: 1
-   :widths: 18 82
-
-   * - Context
-     - Example message
-   * - success
-     - ``"Article fetched successfully"``
-   * - fail
-     - ``"Invalid email address"``
-   * - error
-     - ``"Payment service unavailable"``
-
-
-4.4 ``data`` — Your Actual Payload
-----------------------------------
-
-Everything your API returns lives under ``data``.
-The format should remain **consistent** for the same ``(version, method, endpoint)`` combination.
-
-.. list-table::
-   :header-rows: 1
-   :widths: 18 26 56
-
-   * - Status
-     - Expected ``data`` type
-     - Description
-   * - success
-     - object / array / any
-     - The requested resource(s).
-   * - fail
-     - array
-     - List of validation issues.
-   * - error
-     - array
-     - List of system or dependency errors.
-
-**Example — Success Payload**
-
-.. code-block:: json
-
-   "data": {
-     "type": "article",
-     "attributes": {
-       "id": 42,
-       "title": "JsonDispatch in Action",
-       "category": 1
-     }
-   }
-
-
-4.5 ``_references`` — Turning IDs Into Meaning
-----------------------------------------------
-
-Instead of making clients hard-code enums or category lookups, ``_references`` provides an instant dictionary for ID
-resolution.
-
-**Example**
+Failure:
 
 .. code-block:: json
 
    {
-     "_references": {
-       "category": {
-         "1": "News",
-         "2": "Tutorial",
-         "3": "Opinion"
+     "status": "fail",
+     "message": "Validation failed",
+     "data": [
+       {
+         "code": "EMAIL_INVALID",
+         "title": "Invalid email",
+         "source": {
+           "pointer": "/email"
+         }
        }
-     }
+     ]
    }
-
-Now clients can map ``"category": 2`` → “Tutorial” without additional API calls.
-
-
-4.6 ``_properties`` — Describing Data Context
----------------------------------------------
-
-``_properties`` gives structure-level metadata that describes your payload — useful for UI builders, pagination, or
-deprecation notices.
-
-Common keys include:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 18 14 68
-
-   * - Key
-     - Type
-     - Purpose
-   * - ``type``
-     - string
-     - Resource type (``array``, ``object``, etc.).
-   * - ``name``
-     - string
-     - Logical name of the resource.
-   * - ``count``
-     - int
-     - Total item count (if paginated).
-   * - ``page``
-     - int
-     - Current page number (if applicable).
-   * - ``range``
-     - string
-     - Item range in current response (e.g., ``"21–40"``).
-   * - ``template``
-     - url
-     - Optional schema or structure reference.
-   * - ``deprecation``
-     - url
-     - Optional migration or deprecation notice.
-
-**Example**
-
-.. code-block:: json
-
-   "_properties": {
-     "data": {
-       "type": "array",
-       "name": "articles",
-       "count": 20,
-       "page": 2,
-       "range": "21–40",
-       "deprecation": "https://api.example.com/docs/v2/articles"
-     }
-   }
-
-
-4.7 ``_links`` — Pagination and Beyond
---------------------------------------
-
-``_links`` makes your API navigable. It can include pagination links, related resources, or documentation references.
-
-**Example — Pagination**
-
-.. code-block:: json
-
-   {
-     "_links": {
-       "self": "https://api.example.com/articles?page=2",
-       "next": "https://api.example.com/articles?page=3",
-       "prev": "https://api.example.com/articles?page=1"
-     }
-   }
-
-**Example — Related Resources**
-
-.. code-block:: json
-
-   {
-     "_links": {
-       "self": "https://api.example.com/articles/42",
-       "author": "https://api.example.com/users/99",
-       "comments": "https://api.example.com/articles/42/comments"
-     }
-   }
-
-
-4.8 Envelope Summary
---------------------
-
-.. list-table::
-   :header-rows: 1
-   :widths: 18 58 14
-
-   * - Section
-     - Purpose
-     - Optional
-   * - ``status``
-     - Defines success/fail/error outcome
-     - ❌ No
-   * - ``message``
-     - Human-readable summary
-     - ⚪ Yes
-   * - ``data``
-     - Payload or error details
-     - ⚪ Yes
-   * - ``_references``
-     - Lookup tables for enums or IDs
-     - ⚪ Yes
-   * - ``_properties``
-     - Metadata about the response
-     - ⚪ Yes
-   * - ``_links``
-     - Pagination or relational navigation
-     - ⚪ Yes
-
-👉 Together, these create a consistent, machine-parsable yet human-friendly response pattern across all JsonDispatch APIs.

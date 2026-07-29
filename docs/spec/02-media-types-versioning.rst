@@ -1,546 +1,118 @@
-2. Media types & versioning
-===========================
+2. Media types and versioning
+=============================
 
-As your API evolves, clients need a stable way to understand **which shape they’re getting** and how to **migrate** when it changes. JsonDispatch solves this by using a **request version header** plus request media types, and signaling the **exact served version** in a response header.
+2.1 JsonDispatch media type
+---------------------------
 
+A JsonDispatch v3 representation uses:
 
-2.1 Media type explained (with examples)
-----------------------------------------
+::
 
-For JsonDispatch JSON endpoints, send the vendor media type in ``Accept``::
+   application/vnd.<vendor>.jd.v3+json
 
-  Accept: application/vnd.infocyph.jd.v1+json
+``<vendor>`` is a lowercase registered or organization-controlled token. For
+example:
 
+::
 
-Media type breakdown
-^^^^^^^^^^^^^^^^^^^^
+   application/vnd.infocyph.jd.v3+json
+   application/vnd.acme.jd.v3+json
 
-- **``application``** — application payload (static)
-- **``vnd.infocyph``** — your vendor namespace (configurable)
-- **``jd``** — JsonDispatch spec identifier (static for this spec)
-- **``v1``** — **major** version of the request format (configurable)
-- **``+json``** — JSON syntax suffix (static)
+The ``v3`` component identifies the JsonDispatch major version. It does not
+identify the application API version.
 
-.. note::
+2.2 Request negotiation
+-----------------------
 
-   Responses can simply use ``Content-Type: application/json; charset=utf-8`` while still following the JsonDispatch envelope.
+A request for a JsonDispatch representation:
 
-Examples
-^^^^^^^^
+- MUST include an ``Accept`` field containing at least one compatible
+  JsonDispatch media type;
+- MUST include ``X-Api-Version`` with a full stable semantic version in
+  ``MAJOR.MINOR.PATCH`` form; and
+- MAY include other acceptable representations.
 
-- **Project “Acme”**: ``application/vnd.acme.jd.v1+json``
-- **Personal/OSS** (not recommended for org APIs): ``application/prs.yourname.jd.v1+json``
+Example:
 
+.. code-block:: http
 
-2.2 Versioning strategy (major/minor/patch)
--------------------------------------------
+   GET /articles HTTP/1.1
+   Accept: application/vnd.infocyph.jd.v3+json
+   X-Api-Version: 1.4.0
 
-JsonDispatch follows `Semantic Versioning <https://semver.org/>`_:
+The server MUST apply HTTP media-range precedence and quality values. It MUST
+NOT select a representation solely because it appears first when another
+compatible representation has a higher quality value.
 
-- **Major** (``v1 → v2``): breaking changes to the **envelope or field types**
-- **Minor** (``v1.1 → v1.2``): backward-compatible additions
-- **Patch** (``v1.0.0 → v1.0.1``): backward-compatible bug fixes
+The selected application API version MUST have the same major version as the
+requested ``X-Api-Version``. A server MAY select a later compatible minor or
+patch version. It MUST NOT silently select a different application API major.
 
-.. tip::
+2.3 Response representation
+---------------------------
 
-   The request header ``X-Api-Version`` carries the desired full version (e.g., ``1.3.0``).
-   The request media type in ``Accept`` carries the request-format **major** version (e.g., ``…jd.v1+json``).
-   The server’s served version is returned in ``X-Api-Version-Selected``.
+A conforming response with an envelope MUST include:
 
-- **Do not** use ``Content-Type`` for API version negotiation.
-- For requests with a JSON body, use ``Content-Type: application/json; charset=utf-8``.
+.. code-block:: http
 
+   HTTP/1.1 200 OK
+   Content-Type: application/vnd.infocyph.jd.v3+json; charset=utf-8
+   X-Api-Version-Selected: 1.4.2
+   X-Request-Id: 019fb440-4e83-7b1b-9ef9-44a80771f181
+   Vary: Accept, X-Api-Version
 
-2.3 Required & recommended headers
-----------------------------------
+The ``Content-Type`` vendor token MUST match the selected request
+representation. ``X-Api-Version-Selected`` MUST contain the exact application
+API version used to produce the response.
 
-Requests
-^^^^^^^^
+The representation MUST be valid JSON encoded as UTF-8. Producers MUST send a
+JsonDispatch vendor media type, not plain ``application/json``, for a response
+claimed to conform to this specification.
 
-- **MUST** send::
+``Vary`` MUST identify both ``Accept`` and ``X-Api-Version``. It MAY contain
+additional fields and field order is not significant.
 
-    X-Api-Version: <MAJOR.MINOR.PATCH>
+2.4 Negotiation failures
+------------------------
 
-  Example::
-
-    X-Api-Version: 1.4.0
-
-- **MUST** send for JsonDispatch JSON endpoints::
-
-    Accept: application/vnd.<vendor>.jd.v<MAJOR>+json
-
-  Example::
-
-    Accept: application/vnd.infocyph.jd.v1+json
-
-- Clients **MAY** send multiple media types in ``Accept`` (comma-separated). The server **MUST** select the first
-  supported media type, or return ``406 Not Acceptable`` when none are supported.
-
-- For requests with a JSON body, **MUST** send::
-
-    Content-Type: application/json; charset=utf-8
-
-Responses
-^^^^^^^^^
-
-- **MUST** send::
-
-    X-Api-Version-Selected: <MAJOR.MINOR.PATCH>
-
-  Example::
-
-    X-Api-Version-Selected: 1.4.0
-
-- **MAY** send::
-
-    Content-Type: application/json; charset=utf-8
-
-.. note::
-
-   Servers *can* set a vendor media type on responses if needed, but
-   ``application/json`` is sufficient and preferred.
-
-2.3.1 Negotiation and version error matrix
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Use the following status codes consistently for protocol-level request problems:
+Protocol failures use a conforming ``fail`` envelope when the server can emit a
+JsonDispatch error representation:
 
 .. list-table::
    :header-rows: 1
-   :widths: 30 14 56
+   :widths: 44 12 44
 
    * - Condition
-     - Status
-     - Required behavior
-   * - ``X-Api-Version`` missing or malformed
+     - HTTP status
+     - Required issue code
+   * - ``X-Api-Version`` is missing or malformed
      - ``400``
-     - Return ``fail`` with a machine-readable error code (for example ``API_VERSION_INVALID``).
-   * - JsonDispatch JSON endpoint receives unsupported ``Accept`` media type
+     - ``API_VERSION_INVALID``
+   * - No acceptable JsonDispatch media type is supported
      - ``406``
-     - Return ``fail`` and include supported media types in the error detail.
-   * - Request includes JSON body with unsupported ``Content-Type``
-     - ``415``
-     - Return ``fail`` and require ``Content-Type: application/json; charset=utf-8``.
-   * - Requested version is retired (past sunset window)
+     - ``REPRESENTATION_NOT_ACCEPTABLE``
+   * - The application API version is valid but unsupported
+     - ``406``
+     - ``API_VERSION_UNSUPPORTED``
+   * - The requested application API version is retired
      - ``410``
-     - Return ``fail`` and include migration guidance to a supported version.
+     - ``API_VERSION_RETIRED``
 
-For deprecated-but-still-supported versions, continue serving responses and include ``Deprecation`` and ``Sunset``
-headers to signal migration timing.
+A ``406`` response MAY use the server's default supported JsonDispatch media
+type because no requested representation was selectable. Its issue metadata
+SHOULD identify supported media types or versions without exposing internal
+configuration.
 
-``X-Request-Id``, ``X-Correlation-Id`` and other tracing headers are covered in **Section 3**.
+Request-body ``Content-Type`` validation is owned by the application protocol,
+not JsonDispatch.
 
-
-2.4 Version selection & migration
----------------------------------
-
-- The **server controls** the response envelope version via ``X-Api-Version-Selected``.
-- When you introduce a **breaking change**, bump the **request** major (e.g., ``v1 → v2``), request the new full version
-  via ``X-Api-Version``, and keep returning ``application/json`` with ``X-Api-Version-Selected``.
-
-Create (client → server)::
-
-  POST /articles
-  X-Api-Version: 1.4.0
-  Accept: application/vnd.infocyph.jd.v1+json
-  Content-Type: application/json; charset=utf-8
-
-  { "title": "Hello JD" }
-
-Response (server → client)
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 201 Created
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.4.0
-   X-Request-Id: 1f1f6a2e-0c8f-4f7f-9b4b-5d2d0a3f5b99
-
-.. code-block:: json
-
-   {
-     "status": "success",
-     "data": { ... }
-   }
-
-After a breaking change (client updates request major)::
-
-  POST /articles
-  X-Api-Version: 2.0.0
-  Accept: application/vnd.infocyph.jd.v2+json
-  Content-Type: application/json; charset=utf-8
-
-  { "title": "Hello JD v2" }
-
-Server response
-~~~~~~~~~~~~~~~
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 201 Created
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 2.0.0
-   X-Request-Id: 6c2a3d7e-9d5a-4b61-9b05-d1d8f6a8f4a1
-
-.. code-block:: json
-
-   {
-     "status": "success",
-     "data": { ... }
-   }
-
-Clients signal the desired API version via ``X-Api-Version`` and the request-format major via ``Accept``. When sending
-a JSON body, use ``Content-Type: application/json; charset=utf-8``. Servers announce the **exact implementation
-served** via ``X-Api-Version-Selected`` in the **response**.
-
-
-2.5 Non-JSON responses (reports & exports)
-------------------------------------------
-
-JsonDispatch defines the **response envelope for JSON**. For binary or tabular deliverables (CSV, PDF, ZIP, images), **return the native media type directly** and keep JsonDispatch for **orchestration endpoints** (job creation, metadata, links).
-
-2.5.1 Direct file delivery
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-When the endpoint returns a file stream:
-
-Request::
-
-  GET /reports/activity/download?from=2025-09-01&to=2025-09-30
-  Accept: text/csv
-  X-Api-Version: 1.4.0
-
-Response
-~~~~~~~~
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 200 OK
-   Content-Type: text/csv
-   Content-Disposition: attachment; filename="activity-report-2025-09.csv"
-   X-Api-Version-Selected: 1.4.0
-   X-Request-Id: 7bfae01e-771c-41d4-b1cf-0ad52d8bce19
-
-.. note::
-
-   Use the correct ``Content-Type`` (e.g., ``text/csv``, ``application/pdf``, ``application/zip``) and add
-   ``Content-Disposition`` for downloads.
-
-2.5.2 Orchestration via JsonDispatch (recommended)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Create the report **asynchronously** and return a JsonDispatch envelope with status and links.
-
-Request::
-
-  POST /reports/activity
-  X-Api-Version: 1.4.0
-  Accept: application/vnd.infocyph.jd.v1+json
-  Content-Type: application/json; charset=utf-8
-
-  { "from": "2025-09-01", "to": "2025-09-30", "format": "csv" }
-
-Response
-~~~~~~~~
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 202 Accepted
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.4.0
-   X-Request-Id: 3b2c7a5a-0b2e-4b69-b1a2-1a2c3d4e5f6a
-
-Body
-~~~~
-
-.. code-block:: json
-
-   {
-     "status": "success",
-     "message": "Report job accepted",
-     "data": {
-       "report_id": "rep_9KfGH2",
-       "state": "queued",
-       "format": "csv",
-       "expires_at": "2025-10-31T23:59:59Z"
-     },
-     "_links": {
-       "self": "https://api.example.com/reports/activity/rep_9KfGH2",
-       "download": {
-         "href": "https://cdn.example.com/reports/rep_9KfGH2.csv",
-         "meta": { "method": "GET", "expires": "2025-10-31T23:59:59Z" }
-       }
-     },
-     "_properties": {
-       "data": { "type": "object", "name": "report" }
-     }
-   }
-
-2.5.3 Streaming & large datasets
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-For very large exports, consider **streaming** formats:
-
-- **CSV/TSV stream:** ``text/csv``
-- **NDJSON stream:** ``application/x-ndjson``
-- **Gzip:** add ``Content-Encoding: gzip`` when appropriate
-
-Pair streaming/download endpoints with a **JsonDispatch status endpoint** so clients can poll readiness and discover ``_links.download``.
-
-Status polling::
-
-  GET /reports/activity/rep_9KfGH2
-  Accept: application/vnd.infocyph.jd.v1+json
-  X-Api-Version: 1.4.0
-
-Response (ready)
-~~~~~~~~~~~~~~~~
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 200 OK
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.4.0
-   X-Request-Id: d1c9b15f-9c1e-42d5-9a9e-8b8e5a2b1c0a
-
-Body
-~~~~
-
-.. code-block:: json
-
-   {
-     "status": "success",
-     "data": {
-       "report_id": "rep_9KfGH2",
-       "state": "ready",
-       "size_bytes": 9421331
-     },
-     "_links": {
-       "download": "https://cdn.example.com/reports/rep_9KfGH2.csv",
-       "retry": "https://api.example.com/reports/activity/rep_9KfGH2/retry"
-     }
-   }
-
-.. tip::
-
-   **Rule of thumb:** use JsonDispatch for **control, status, and discovery**; use native media types for the **actual file bytes**.
-
-
-2.6 Authentication & authorization
+2.5 Responses outside JsonDispatch
 ----------------------------------
 
-JsonDispatch APIs typically require authentication. This section defines where authentication credentials should be placed and how authentication failures map to the response envelope.
+Binary files, CSV, HTML, images, event streams, and other non-JSON
+representations use their native media types and do not carry a JsonDispatch
+envelope.
 
-2.6.1 Authentication token placement
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-**Recommended:** use the ``Authorization`` header with a bearer token for API authentication.
-
-Interoperability note:
-
-- Preferred format: ``Authorization: Bearer <token>``.
-- Servers **MAY** accept ``Authorization: token <token>`` for compatibility with older clients.
-- If JWT is used, clients **MUST** send the ``Bearer`` scheme.
-
-**Request**
-
-.. code-block:: http
-
-   GET /api/v1/users/me
-   Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-   Accept: application/vnd.infocyph.jd.v1+json
-   X-Api-Version: 1.4.0
-
-**Alternative patterns:**
-
-- **API Keys:** ``X-Api-Key: your-api-key-here``
-- **Basic Auth:** ``Authorization: Basic base64(username:password)`` (HTTPS only)
-- **Cookie-based:** ``Cookie: session_id=abc123`` (for browser clients)
-
-.. warning::
-
-   Never send credentials in query parameters or URL paths, as they may be logged by proxies, CDNs, or web servers.
-
-2.6.2 Authentication failure responses
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-When authentication fails (missing, invalid, or expired token), return **``401 Unauthorized``** with a ``fail`` status.
-
-Example: Missing token
-~~~~~~~~~~~~~~~~~~~~~~
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 401 Unauthorized
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.4.0
-   X-Request-Id: f47ac10b-58cc-4372-a567-0e02b2c3d479
-   WWW-Authenticate: Bearer realm="API"
-
-.. code-block:: json
-
-   {
-     "status": "fail",
-     "message": "Authentication required",
-     "data": {
-       "errors": [
-         {
-           "field": "Authorization",
-           "code": "AUTH_MISSING",
-           "message": "No authentication token provided"
-         }
-       ]
-     }
-   }
-
-Example: Invalid or expired token
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 401 Unauthorized
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.4.0
-   X-Request-Id: 550e8400-e29b-41d4-a716-446655440000
-   WWW-Authenticate: Bearer realm="API", error="invalid_token"
-
-.. code-block:: json
-
-   {
-     "status": "fail",
-     "message": "Invalid or expired authentication token",
-     "data": {
-       "errors": [
-         {
-           "field": "Authorization",
-           "code": "AUTH_INVALID",
-           "message": "Token signature verification failed"
-         }
-       ]
-     },
-     "_links": {
-       "refresh": "https://api.example.com/auth/refresh",
-       "login": "https://api.example.com/auth/login"
-     }
-   }
-
-2.6.3 Authorization (403 Forbidden)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-When a user is **authenticated** but lacks **permission** to access a resource, return **``403 Forbidden``** with a ``fail`` status.
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 403 Forbidden
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.4.0
-   X-Request-Id: 6ba7b810-9dad-11d1-80b4-00c04fd430c8
-
-.. code-block:: json
-
-   {
-     "status": "fail",
-     "message": "Access denied",
-     "data": {
-       "errors": [
-         {
-           "field": "resource",
-           "code": "PERMISSION_DENIED",
-           "message": "You do not have permission to delete this resource"
-         }
-       ]
-     }
-   }
-
-2.6.4 API key authentication
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-For server-to-server communication, API keys can be used:
-
-**Request**
-
-.. code-block:: http
-
-   GET /api/v1/webhooks
-   X-Api-Key: sk_live_51H8rQ2eZvKYlo2C8...
-   Accept: application/vnd.infocyph.jd.v1+json
-   X-Api-Version: 1.4.0
-
-Failed API key authentication
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-**Response**
-
-.. code-block:: http
-
-   HTTP/1.1 401 Unauthorized
-   Content-Type: application/json; charset=utf-8
-   X-Api-Version-Selected: 1.4.0
-   X-Request-Id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
-
-.. code-block:: json
-
-   {
-     "status": "fail",
-     "message": "Invalid API key",
-     "data": {
-       "errors": [
-         {
-           "field": "X-Api-Key",
-           "code": "INVALID_API_KEY",
-           "message": "The provided API key is invalid or has been revoked"
-         }
-       ]
-     }
-   }
-
-2.6.5 OAuth 2.0 & token refresh
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-For OAuth 2.0 flows, expired access tokens should return ``401`` with a hint to refresh:
-
-.. code-block:: json
-
-   {
-     "status": "fail",
-     "message": "Access token expired",
-     "data": {
-       "errors": [
-         {
-           "field": "Authorization",
-           "code": "TOKEN_EXPIRED",
-           "message": "Access token has expired. Use refresh token to obtain a new one"
-         }
-       ]
-     },
-     "_links": {
-       "refresh": "https://api.example.com/oauth/token"
-     },
-     "_properties": {
-       "token": {
-         "expired_at": "2025-10-22T14:30:00Z",
-         "type": "Bearer"
-       }
-     }
-   }
-
-.. tip::
-
-   Always include the ``WWW-Authenticate`` header in 401 responses to help clients understand the authentication scheme.
+HTTP responses that cannot contain a representation, including ``204``,
+``205``, and ``304``, are not JsonDispatch responses. Redirects are also
+outside the envelope contract.

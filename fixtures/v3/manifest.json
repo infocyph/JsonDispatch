@@ -1,0 +1,140 @@
+{
+  "schema": "../../schemas/v3/http-response.schema.json",
+  "fixtures": [
+    {
+      "path": "positive/minimal-success.json",
+      "valid": true,
+      "rule": "A body-bearing 2xx response uses a success envelope."
+    },
+    {
+      "path": "positive/validation-fail.json",
+      "valid": true,
+      "rule": "A 4xx response uses fail with one or more issues."
+    },
+    {
+      "path": "positive/dependency-error.json",
+      "valid": true,
+      "rule": "A 5xx response uses error with public-safe issues."
+    },
+    {
+      "path": "positive/offset-pagination.json",
+      "valid": true,
+      "rule": "Offset pagination declares its window and self link."
+    },
+    {
+      "path": "positive/cursor-pagination.json",
+      "valid": true,
+      "rule": "A cursor page with more data includes a cursor and next link."
+    },
+    {
+      "path": "positive/references-and-rich-link.json",
+      "valid": true,
+      "rule": "References and typed links follow their bounded maps."
+    },
+    {
+      "path": "negative/missing-request-id.json",
+      "valid": false,
+      "rule": "Every conforming response requires X-Request-Id."
+    },
+    {
+      "path": "negative/plain-json-media-type.json",
+      "valid": false,
+      "rule": "A conforming response uses the selected JsonDispatch vendor media type."
+    },
+    {
+      "path": "negative/wrong-media-type-major.json",
+      "valid": false,
+      "rule": "JsonDispatch 3 uses the jd.v3 media-type major."
+    },
+    {
+      "path": "negative/invalid-selected-api-version.json",
+      "valid": false,
+      "rule": "X-Api-Version-Selected is a full stable semantic version."
+    },
+    {
+      "path": "negative/http-envelope-status-mismatch.json",
+      "valid": false,
+      "rule": "HTTP and envelope status classes agree."
+    },
+    {
+      "path": "negative/no-content-with-envelope.json",
+      "valid": false,
+      "rule": "A 204 response cannot carry a JsonDispatch envelope."
+    },
+    {
+      "path": "negative/unknown-envelope-member.json",
+      "valid": false,
+      "rule": "Unknown top-level envelope members are invalid."
+    },
+    {
+      "path": "negative/fail-without-data.json",
+      "valid": false,
+      "rule": "A fail envelope requires an issue array."
+    },
+    {
+      "path": "negative/empty-issues.json",
+      "valid": false,
+      "rule": "A fail or error issue array cannot be empty."
+    },
+    {
+      "path": "negative/issue-without-code.json",
+      "valid": false,
+      "rule": "Every issue requires a stable code."
+    },
+    {
+      "path": "negative/source-with-two-locations.json",
+      "valid": false,
+      "rule": "An issue source identifies exactly one location."
+    },
+    {
+      "path": "negative/non-pointer-property.json",
+      "valid": false,
+      "rule": "Property-map keys are JSON Pointer paths."
+    },
+    {
+      "path": "negative/cursor-without-next.json",
+      "valid": false,
+      "rule": "A cursor page with has_more=true requires a cursor and next link."
+    },
+    {
+      "path": "negative/link-object-without-href.json",
+      "valid": false,
+      "rule": "An enriched link object requires href."
+    },
+    {
+      "path": "negative/vary-missing-api-version.json",
+      "valid": false,
+      "rule": "Vary identifies both Accept and X-Api-Version."
+    },
+    {
+      "path": "negative/invalid-request-id.json",
+      "valid": false,
+      "rule": "X-Request-Id is a bounded non-whitespace ASCII token."
+    },
+    {
+      "path": "negative/pagination-without-self.json",
+      "valid": false,
+      "rule": "Every paginated envelope includes a self link."
+    },
+    {
+      "path": "negative/pagination-on-object.json",
+      "valid": false,
+      "rule": "Pagination is valid only for array data."
+    },
+    {
+      "path": "negative/cursor-at-end-with-next-cursor.json",
+      "valid": false,
+      "rule": "A terminal cursor page does not advertise a next cursor."
+    },
+    {
+      "path": "negative/invalid-issue-code.json",
+      "valid": false,
+      "rule": "Issue codes use uppercase stable machine syntax."
+    },
+    {
+      "path": "negative/empty-link-map.json",
+      "valid": false,
+      "rule": "An emitted companion map cannot be empty."
+    }
+  ]
+}

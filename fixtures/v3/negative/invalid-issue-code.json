@@ -1,0 +1,18 @@
+{
+  "http_status": 400,
+  "headers": {
+    "Content-Type": "application/vnd.infocyph.jd.v3+json; charset=utf-8",
+    "X-Api-Version-Selected": "1.0.0",
+    "X-Request-Id": "request-invalid-code",
+    "Vary": "Accept, X-Api-Version"
+  },
+  "body": {
+    "status": "fail",
+    "data": [
+      {
+        "code": "invalid-code",
+        "title": "Invalid issue code"
+      }
+    ]
+  }
+}
