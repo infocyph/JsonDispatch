@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://docs.infocyph.com/projects/json-dispatch/en/3.0.0/schemas/v3/link.schema.json",
+  "$id": "https://docs.infocyph.com/projects/json-dispatch/en/latest/schemas/v3/link.schema.json",
   "title": "JsonDispatch v3 link map",
   "type": "object",
   "minProperties": 1,
