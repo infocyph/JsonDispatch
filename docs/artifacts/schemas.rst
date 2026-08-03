@@ -3,12 +3,12 @@ Schema reference
 
 These JSON Schema Draft 2020-12 documents are normative. The rendered copies
 below are included directly from the machine-readable source, so the
-documentation cannot silently drift from the downloadable files.
+documentation cannot silently drift from the published schema references.
 
 Envelope
 --------
 
-:download:`Download envelope.schema.json <../../schemas/v3/envelope.schema.json>`
+`Open envelope.schema.json <https://docs.infocyph.com/projects/json-dispatch/en/latest/schemas/v3/envelope.schema.json>`_
 
 .. literalinclude:: ../../schemas/v3/envelope.schema.json
    :language: json
@@ -17,7 +17,7 @@ Envelope
 HTTP response fixture
 ---------------------
 
-:download:`Download http-response.schema.json <../../schemas/v3/http-response.schema.json>`
+`Open http-response.schema.json <https://docs.infocyph.com/projects/json-dispatch/en/latest/schemas/v3/http-response.schema.json>`_
 
 .. literalinclude:: ../../schemas/v3/http-response.schema.json
    :language: json
@@ -26,7 +26,7 @@ HTTP response fixture
 Issue
 -----
 
-:download:`Download issue.schema.json <../../schemas/v3/issue.schema.json>`
+`Open issue.schema.json <https://docs.infocyph.com/projects/json-dispatch/en/latest/schemas/v3/issue.schema.json>`_
 
 .. literalinclude:: ../../schemas/v3/issue.schema.json
    :language: json
@@ -35,7 +35,7 @@ Issue
 Link map
 --------
 
-:download:`Download link.schema.json <../../schemas/v3/link.schema.json>`
+`Open link.schema.json <https://docs.infocyph.com/projects/json-dispatch/en/latest/schemas/v3/link.schema.json>`_
 
 .. literalinclude:: ../../schemas/v3/link.schema.json
    :language: json
@@ -44,7 +44,7 @@ Link map
 Pagination
 ----------
 
-:download:`Download pagination.schema.json <../../schemas/v3/pagination.schema.json>`
+`Open pagination.schema.json <https://docs.infocyph.com/projects/json-dispatch/en/latest/schemas/v3/pagination.schema.json>`_
 
 .. literalinclude:: ../../schemas/v3/pagination.schema.json
    :language: json
@@ -53,7 +53,7 @@ Pagination
 Property map
 ------------
 
-:download:`Download property.schema.json <../../schemas/v3/property.schema.json>`
+`Open property.schema.json <https://docs.infocyph.com/projects/json-dispatch/en/latest/schemas/v3/property.schema.json>`_
 
 .. literalinclude:: ../../schemas/v3/property.schema.json
    :language: json
@@ -62,7 +62,7 @@ Property map
 Reference map
 -------------
 
-:download:`Download reference.schema.json <../../schemas/v3/reference.schema.json>`
+`Open reference.schema.json <https://docs.infocyph.com/projects/json-dispatch/en/latest/schemas/v3/reference.schema.json>`_
 
 .. literalinclude:: ../../schemas/v3/reference.schema.json
    :language: json
